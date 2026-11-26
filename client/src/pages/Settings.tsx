@@ -280,6 +280,11 @@ function MailTab() {
         Zugangsdaten Ihres Postfachs bei Internex (office@skop-bauconsulting.at). Diese werden nur auf Ihrem Server gespeichert und nie auf die Geräte übertragen.
       </p>
       {msg && <div className="notice">{msg}</div>}
+      {!String(s.from || '').includes('@') && (
+        <div className="notice red">
+          Das Feld „Absender“ ist leer oder ohne E-Mail-Adresse. Bitte z. B. <b>Skop Bauconsulting GmbH &lt;office@skop-bauconsulting.at&gt;</b> eintragen – sonst lehnen manche Empfänger (z. B. Gmail) die Mails ab.
+        </div>
+      )}
       <div className="grid3">
         <label className="f">
           SMTP-Server
@@ -305,8 +310,8 @@ function MailTab() {
           <input type="password" {...f('password')} />
         </label>
         <label className="f">
-          Absender
-          <input {...f('from')} />
+          Absender (Name &lt;Adresse&gt;)
+          <input {...f('from')} placeholder="Skop Bauconsulting GmbH <office@skop-bauconsulting.at>" />
         </label>
       </div>
       <label className="check">
