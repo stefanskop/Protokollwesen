@@ -265,7 +265,7 @@ function MailTab() {
       <div className="grid3">
         <label className="f">
           SMTP-Server
-          <input {...f('host')} placeholder="z.B. mail.internex.at" />
+          <input {...f('host')} placeholder="mti62028113.secure-node.com" />
         </label>
         <label className="f">
           Port

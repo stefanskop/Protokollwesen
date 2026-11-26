@@ -13,7 +13,8 @@ interface Smtp {
   bccSelf: boolean;
 }
 
-const DEFAULT_SMTP: Smtp = { host: '', port: 465, secure: true, user: '', password: '', from: 'Skop Bauconsulting GmbH <office@skop-bauconsulting.at>', bccSelf: true };
+// Vorgabe: Internex (SSL/TLS zwingend, Benutzer = vollständige E-Mail-Adresse)
+const DEFAULT_SMTP: Smtp = { host: 'mti62028113.secure-node.com', port: 465, secure: true, user: 'office@skop-bauconsulting.at', password: '', from: 'Skop Bauconsulting GmbH <office@skop-bauconsulting.at>', bccSelf: true };
 
 function transport(s: Smtp) {
   return nodemailer.createTransport({ host: s.host, port: s.port, secure: s.secure, auth: s.user ? { user: s.user, pass: s.password } : undefined });
