@@ -49,6 +49,7 @@ export default defineConfig({
     kostenverfolgung(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: false, // Registrierung in main.tsx (mit regelmäßiger Update-Prüfung)
       workbox: {
         navigateFallback: '/index.html',
         // Die Kostenverfolgung (/kosten/) ist eine eigene Seite und darf nicht durch die App ersetzt werden

@@ -476,6 +476,7 @@ function AccountTab({ onLogout }: { onLogout: () => void }) {
       <p>
         Angemeldet als <b>{user.name}</b> ({user.email}, {user.role === 'admin' ? 'Administrator' : 'Mitarbeiter'})
       </p>
+      <VersionInfo />
       <h3>Passwort ändern</h3>
       {msg && <div className="notice">{msg}</div>}
       <div className="grid2">
@@ -530,5 +531,22 @@ function AccountTab({ onLogout }: { onLogout: () => void }) {
         </button>
       </div>
     </div>
+  );
+}
+
+function VersionInfo() {
+  const [v, setV] = useState('');
+  useEffect(() => {
+    api<{ version: string }>('/api/health')
+      .then((r) => setV(r.version))
+      .catch(() => setV('offline'));
+  }, []);
+  return (
+    <p className="muted small">
+      Programmversion (Server): <b>{v || '…'}</b>
+      <button className="btn small" style={{ marginLeft: 10 }} onClick={() => location.reload()}>
+        <i className="fa-solid fa-rotate" /> Neu laden
+      </button>
+    </p>
   );
 }
