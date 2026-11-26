@@ -1,0 +1,12 @@
+# Nur für Entwicklung: Image lokal aus dem Quellcode bauen
+services:
+  protokollwesen:
+    build: .
+    image: protokollwesen:dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+    environment:
+      - ADMIN_EMAIL=admin@example.at
+      - ADMIN_PASSWORD=entwicklung123

@@ -1,19 +1,20 @@
-# Synology Container Manager → Projekt → Erstellen → diese Datei verwenden
+# Synology Container Manager → Projekt → Erstellen → diese Datei einfügen
+# Das fertige Programm wird von GitHub geladen (kein Bauen auf der NAS nötig).
 services:
   protokollwesen:
-    build: .
-    image: protokollwesen:latest
+    image: ghcr.io/stefanskop/protokollwesen:latest
     container_name: protokollwesen
     restart: unless-stopped
     ports:
       - "8080:8080"
     volumes:
-      # Datenbank, Fotos, Pläne und tägliche Sicherungen – in Hyper Backup aufnehmen!
+      # Datenbank, Fotos und tägliche Sicherungen – in Hyper Backup aufnehmen!
       - /volume1/docker/protokollwesen/data:/data
     environment:
+      - TZ=Europe/Vienna
+      # Erster Administrator – nur beim allerersten Start verwendet.
+      # Danach Passwort in der App ändern und diese Zeile leeren.
       - ADMIN_EMAIL=office@skop-bauconsulting.at
       - ADMIN_NAME=Stefan Skop
-      # nur beim allerersten Start verwendet; danach in der App ändern
-      - ADMIN_PASSWORD=bitte-aendern-123
-      - TZ=Europe/Vienna
+      - ADMIN_PASSWORD=HIER-STARTPASSWORT-EINTRAGEN
     mem_limit: 384m

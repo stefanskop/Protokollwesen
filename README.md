@@ -36,6 +36,10 @@ Den gesamten Ordner bitte zusätzlich in **Hyper Backup** aufnehmen.
 
 ## Installation auf der Synology DS216+II
 
+**Schritt-für-Schritt-Anleitung: [docs/INSTALLATION_NAS.md](docs/INSTALLATION_NAS.md)** – das Programm wird fertig von GitHub geladen (ghcr.io), nicht auf der NAS gebaut.
+
+Kurzfassung:
+
 Voraussetzung: DSM 7.2 mit **Container Manager** (Paketzentrum).
 
 1. In File Station den Ordner `docker/protokollwesen` anlegen und den Inhalt dieses Repositorys dorthin kopieren (oder per Git holen).

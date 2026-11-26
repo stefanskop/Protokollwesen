@@ -12,6 +12,8 @@ RUN npm run build && npm prune --omit=dev
 
 # ---- Laufzeit ----
 FROM node:22-bookworm-slim
+ARG APP_VERSION=dev
+ENV APP_VERSION=$APP_VERSION
 ENV NODE_ENV=production DATA_DIR=/data PORT=8080 CLIENT_DIR=/app/client/dist
 WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
