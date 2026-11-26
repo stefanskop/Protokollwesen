@@ -1,0 +1,19 @@
+# Synology Container Manager → Projekt → Erstellen → diese Datei verwenden
+services:
+  protokollwesen:
+    build: .
+    image: protokollwesen:latest
+    container_name: protokollwesen
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      # Datenbank, Fotos, Pläne und tägliche Sicherungen – in Hyper Backup aufnehmen!
+      - /volume1/docker/protokollwesen/data:/data
+    environment:
+      - ADMIN_EMAIL=office@skop-bauconsulting.at
+      - ADMIN_NAME=Stefan Skop
+      # nur beim allerersten Start verwendet; danach in der App ändern
+      - ADMIN_PASSWORD=bitte-aendern-123
+      - TZ=Europe/Vienna
+    mem_limit: 384m
