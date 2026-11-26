@@ -134,7 +134,7 @@ export function kostenRoutes(app: FastifyInstance) {
         if (!p) continue;
         if (r0.updated_at > p.changed) p.changed = r0.updated_at;
         if (r0.type === 'protocol') p.protocols++;
-        else if (r0.type === 'item' && JSON.parse(r0.data).status === 'offen') p.open++;
+        else if (r0.type === 'item' && ['offen', 'behoben'].includes(JSON.parse(r0.data).status)) p.open++;
       }
       return { items: [...map.values()] };
     });

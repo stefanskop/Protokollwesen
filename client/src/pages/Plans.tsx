@@ -1,5 +1,5 @@
 // Planverwaltung je Projekt
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { save, remove } from '../db';
 import { api } from '../api';
@@ -7,7 +7,7 @@ import { getBlob } from '../sync';
 import { useProjectData, useProjects, useGlobal, useSettings, addFile, blobToDataUrl } from '../data';
 import { Modal, DateInput } from '../components/ui';
 import { PlanViewer, type ViewerMarker } from '../components/PlanViewer';
-import { SyncBadge } from '../App';
+import { rememberProject, SyncBadge } from '../App';
 import { fmtDate, todayIso, contactName, type Plan, type Project, type PlanVersion } from '../../../shared/src/index';
 
 type D = ReturnType<typeof useProjectData>;
@@ -24,6 +24,9 @@ export function PlansPage() {
   const nav = useNavigate();
   const d = useProjectData(pid);
   const { projects } = useProjects();
+  useEffect(() => {
+    if (pid) rememberProject(pid);
+  }, [pid]);
   const [folder, setFolder] = useState<string | null>(null); // null = alle
   const [q, setQ] = useState('');
   const [onlyActive, setOnlyActive] = useState(true);

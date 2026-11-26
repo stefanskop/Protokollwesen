@@ -8,6 +8,7 @@ export interface ViewerMarker {
   title?: string;
   itemId?: string;
   highlight?: boolean;
+  color?: string;
 }
 
 /** Vollbild-Planansicht mit Zoom, Seitenwahl und Markern; optional Marker setzen */
@@ -126,7 +127,7 @@ export function PlanViewer({
               <button
                 key={k}
                 className={'pin' + (m.highlight ? ' hl' : '')}
-                style={{ left: `${m.marker.x * 100}%`, top: `${m.marker.y * 100}%` }}
+                style={{ left: `${m.marker.x * 100}%`, top: `${m.marker.y * 100}%`, ...(m.color ? ({ '--pin': m.color } as any) : {}) }}
                 title={m.title || m.label}
                 onClick={(e) => {
                   e.stopPropagation();

@@ -11,6 +11,29 @@ import { ProtocolPage } from './pages/Protocol';
 import { Workspace } from './pages/Workspace';
 import { ImportPage } from './pages/Import';
 import { PlansPage } from './pages/Plans';
+import { DefectsPage } from './pages/Defects';
+import { useProjects } from './data';
+
+const currentPath = () => window.location.pathname;
+
+/** Öffnet einen Projektbereich im zuletzt verwendeten Projekt */
+function LastProject({ to }: { to: string }) {
+  const { projects, loaded } = useProjects();
+  if (!loaded) return null;
+  let last: string | null = null;
+  try {
+    last = localStorage.getItem('pw.lastProject');
+  } catch {}
+  const p = projects.find((x) => x.id === last && !x.archived) || projects.find((x) => !x.archived);
+  if (!p) return <div className="empty">Noch keine Projekte vorhanden.</div>;
+  return <Navigate to={`/p/${p.id}/${to}`} replace />;
+}
+
+export function rememberProject(id: string) {
+  try {
+    localStorage.setItem('pw.lastProject', id);
+  } catch {}
+}
 import { ContactsPage } from './pages/Contacts';
 import { SettingsPage } from './pages/Settings';
 
@@ -68,6 +91,14 @@ export function App() {
               <span className="ico">☎</span>
               <span className="label">Firmen & Kontakte</span>
             </NavLink>
+            <NavLink to="/plaene" className={() => (/\/plaene$/.test(currentPath()) ? 'active' : '')}>
+              <span className="ico">🗺</span>
+              <span className="label">Pläne</span>
+            </NavLink>
+            <NavLink to="/maengel" className={() => (/\/maengel$/.test(currentPath()) ? 'active' : '')}>
+              <span className="ico">⚠</span>
+              <span className="label">Mängel</span>
+            </NavLink>
             <NavLink to="/einstellungen">
               <span className="ico">⚙</span>
               <span className="label">Einstellungen</span>
@@ -84,6 +115,9 @@ export function App() {
               <Route path="/p/:pid/plaene" element={<PlansPage />} />
               <Route path="/p/:pid/protokoll/:prid" element={<ProtocolPage />} />
               <Route path="/kontakte" element={<ContactsPage />} />
+              <Route path="/plaene" element={<LastProject to="plaene" />} />
+              <Route path="/maengel" element={<LastProject to="maengel" />} />
+              <Route path="/p/:pid/maengel" element={<DefectsPage />} />
               <Route path="/import" element={<ImportPage />} />
               <Route
                 path="/einstellungen"
@@ -110,7 +144,7 @@ export function App() {
 
 function Main({ children }: { children: React.ReactNode }) {
   const loc = useLocation();
-  return <main className={'main' + (/^\/p\/[^/]+(\/plaene)?\/?$/.test(loc.pathname) ? ' main-ws' : '')}>{children}</main>;
+  return <main className={'main' + (/^\/p\/[^/]+(\/plaene|\/maengel)?\/?$/.test(loc.pathname) ? ' main-ws' : '')}>{children}</main>;
 }
 
 export function SyncBadge() {

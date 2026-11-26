@@ -48,6 +48,15 @@ Die Kostenverfolgung (ÖNORM B 1801-1: Budget, Aufträge, Nachträge, Rechnungen
 
 **Neue Version der Kostenverfolgung einspielen:** `kosten/Kostenverfolgung.html` durch die neue Datei ersetzen und auf `main` hochladen. Das Abgleich-Skript `kosten/kosten-sync.js` wird beim Bauen automatisch eingebunden, die HTML-Datei selbst muss dafür nicht angepasst werden. Voraussetzung ist, dass die globalen Funktionen `boot`, `loadStore`, `persist`, `normalizeProject` und die Objekte `STORE`, `P`, `START`, `PRJ`, `RPS`, `UI` und `IO` erhalten bleiben.
 
+### Mängelmanagement
+- Mängel sind Protokollpunkte (Mängelbegehung / Abnahme; jeder Punkt kann zusätzlich „als Mangel geführt“ werden)
+- Status: offen → behoben gemeldet → erledigt (abgenommen); Mangelart, Abzug/Kosten, Datum behoben gemeldet / abgenommen
+- Mängelseite je Projekt mit Filtern, Schnellknöpfen, Planansicht (Marker farbig nach Status)
+- Mängelliste als PDF; Aufforderung zur Mängelbehebung (ÖNORM B 2110) je Firma per E-Mail
+
+### Planverwaltung
+- Pläne je Projekt in Ordnern, Indexstände, Planansicht, Planmarker (auch im Protokoll-PDF), Versand per E-Mail
+
 ## Installation auf der Synology DS216+II
 
 **Schritt-für-Schritt-Anleitung: [docs/INSTALLATION_NAS.md](docs/INSTALLATION_NAS.md)** – das Programm wird fertig von GitHub geladen (ghcr.io), nicht auf der NAS gebaut.

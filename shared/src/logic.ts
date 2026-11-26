@@ -84,7 +84,7 @@ export function groupKey(item: Item, groupBy: GroupBy) {
   }
 }
 
-export const SNAPSHOT_FIELDS: (keyof Item)[] = ['title', 'status', 'priority', 'companyId', 'responsibleId', 'observerIds', 'itemType', 'trade', 'category', 'location', 'dueFrom', 'dueTo', 'doneAt'];
+export const SNAPSHOT_FIELDS: (keyof Item)[] = ['title', 'status', 'priority', 'companyId', 'responsibleId', 'observerIds', 'itemType', 'trade', 'category', 'location', 'dueFrom', 'dueTo', 'doneAt', 'defectType', 'cost', 'fixedReportedAt', 'acceptedAt'];
 
 export function makeSnapshot(protocol: Protocol, items: Map<string, Item>) {
   const snap: Record<string, Partial<Item>> = {};
@@ -192,3 +192,7 @@ export function parseDeDate(s: string): string | null {
   if (dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return null;
   return `${y}-${pad(mo, 2)}-${pad(d, 2)}`;
 }
+
+export const isOpenStatus = (s: string) => s === 'offen' || s === 'behoben';
+
+export const STATUS_LABEL: Record<string, string> = { info: 'Info', offen: 'Offen', behoben: 'Behoben gemeldet', erledigt: 'Erledigt' };

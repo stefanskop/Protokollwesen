@@ -277,7 +277,7 @@ function itemBlock(ctx: PdfContext, it: Item, accent: string): any {
       : { text: '', width: '*' };
   const statusCol: any[] = [];
   if (it.status !== 'info') {
-    statusCol.push({ text: it.status === 'erledigt' ? 'Erledigt' : 'Offen', fontSize: 8, width: 'auto', margin: [0, 1, 6, 0] });
+    statusCol.push({ text: it.status === 'erledigt' ? 'Erledigt' : it.status === 'behoben' ? 'Behoben gemeldet' : 'Offen', fontSize: 8, width: 'auto', margin: [0, 1, 6, 0] });
     if (F.priority && it.priority === 'hoch') statusCol.push(dot(RED));
     else statusCol.push({ ...checkbox(it.status === 'erledigt'), width: 10 });
   }
@@ -332,7 +332,13 @@ function itemBlock(ctx: PdfContext, it: Item, accent: string): any {
   if (F.itemType) add('Typ', it.itemType);
   if (F.trade) add('Gewerk', it.trade, false);
   if (F.category) add('Zusatzfeld', it.category, false);
-  if (F.location) add('Lage', it.location, false);
+  if (F.location || it.defect) add('Lage', it.location, false);
+  if (it.defect) {
+    add('Mangelart', it.defectType, false);
+    if (it.cost) add('Abzug/Kosten', it.cost.toLocaleString('de-AT', { style: 'currency', currency: 'EUR' }), false);
+    if (it.fixedReportedAt) add('Behoben gem.', fmtDate(it.fixedReportedAt), false);
+    if (it.acceptedAt) add('Abgenommen', fmtDate(it.acceptedAt), false);
+  }
 
   const row: any[] = [
     { text: fmtDate(it.createdAt?.slice(0, 10) || ctx.protocols.get(it.originProtocolId)?.date), fontSize: 8.5 },

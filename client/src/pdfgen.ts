@@ -5,7 +5,7 @@ import { planSnippet } from './planrender';
 import { buildProtocolPdf, normalize, type Settings, type Project, type Protocol, type Item, type Entry, type Contact, type Company, type FileMeta, type AnyRecord, type Plan } from '../../shared/src/index';
 
 let pdfMakePromise: Promise<any> | null = null;
-async function loadPdfMake() {
+export async function loadPdfMake() {
   if (!pdfMakePromise) {
     pdfMakePromise = (async () => {
       const pdfMake: any = (await import('pdfmake/build/pdfmake')).default;
@@ -17,7 +17,7 @@ async function loadPdfMake() {
   return pdfMakePromise;
 }
 
-async function imageDataUrl(id: string): Promise<string | undefined> {
+export async function imageDataUrl(id: string): Promise<string | undefined> {
   const b = await getBlob(id);
   if (!b || !b.type.startsWith('image/')) return undefined;
   // pdfmake unterstützt nur JPEG/PNG
@@ -32,7 +32,7 @@ async function imageDataUrl(id: string): Promise<string | undefined> {
 }
 
 let logoCache: string | undefined;
-async function defaultLogo() {
+export async function defaultLogo() {
   if (!logoCache) logoCache = await blobToDataUrl(await (await fetch('/logo.png')).blob());
   return logoCache;
 }

@@ -128,6 +128,9 @@ function TypesTab() {
               <th style={{ width: 110 }}>Präfix</th>
               <th style={{ width: 170 }}>Art</th>
               <th className="c" style={{ width: 70 }}>
+                Mängel
+              </th>
+              <th className="c" style={{ width: 70 }}>
                 aktiv
               </th>
             </tr>
@@ -146,6 +149,9 @@ function TypesTab() {
                     <option value="fortlaufend">fortlaufend (gesperrt)</option>
                     <option value="standard">Standard (frei)</option>
                   </select>
+                </td>
+                <td className="c" title="Neue Punkte dieser Protokollart sind Mängel">
+                  <input type="checkbox" checked={!!t.defects} onChange={(e) => upd(i, { defects: e.target.checked })} />
                 </td>
                 <td className="c">
                   <input type="checkbox" checked={t.active} onChange={(e) => upd(i, { active: e.target.checked })} />
@@ -187,6 +193,10 @@ function ListsTab() {
       <div className="card">
         <h3>Gewerke</h3>
         <StringListEditor value={s.trades} onChange={(v) => setS({ trades: v })} />
+      </div>
+      <div className="card">
+        <h3>Mangelarten</h3>
+        <StringListEditor value={s.defectTypes} onChange={(v) => setS({ defectTypes: v })} />
       </div>
       <p className="muted small">Ein Eintrag pro Zeile. Die Reihenfolge entspricht der Sortierung im Protokoll. Projekte können eigene Listen verwenden (Projektdaten).</p>
     </div>

@@ -5,7 +5,7 @@ import { save, remove, getRec } from '../db';
 import { useProjectData, useProjects, useGlobal, useSettings, addFile, useFileUrlEx } from '../data';
 import { generateProtocolPdf } from '../pdfgen';
 import { LazyInput, RichEditor, RichView, ContactSelect, ListSelect, DateInput, Modal } from '../components/ui';
-import { SyncBadge, useUser } from '../App';
+import { rememberProject, SyncBadge, useUser } from '../App';
 import { NewProtocol } from './Project';
 import { SketchEditor } from '../components/Sketch';
 import { PlanViewer } from '../components/PlanViewer';
@@ -30,6 +30,9 @@ import {
   type FileMeta,
   type Plan,
   type PlanMarker,
+  type ItemStatus,
+  isOpenStatus,
+  STATUS_LABEL,
 } from '../../../shared/src/index';
 
 type D = ReturnType<typeof useProjectData>;
@@ -64,6 +67,9 @@ export function Workspace() {
   const d = useProjectData(pid);
   const { projects } = useProjects();
   const settings = useSettings();
+  useEffect(() => {
+    if (pid) rememberProject(pid);
+  }, [pid]);
   const [showClosed, setShowClosed] = usePref('pw.showClosed', true);
   const [creating, setCreating] = useState(false);
   const [dialog, setDialog] = useState<'' | 'daten' | 'senden' | 'uebernehmen'>('');
@@ -129,11 +135,22 @@ export function Workspace() {
     if (!protocol || locked || !lists) return;
     const seq = nextItemSeq(protocol, d.items);
     const cur = itemId ? d.itemMap.get(itemId) : undefined;
+    const isDefectType = !!settings.protocolTypes.find((t) => t.key === protocol.typeKey)?.defects;
     const cat = cur?.category || lists.categories[0];
     const id = await save<Item>(
       'item',
       null,
-      { originProtocolId: protocol.id, code: itemCode(protocol.code, seq), title: '', status: 'info', priority: 'normal', observerIds: [], category: cat, itemType: cur?.itemType || cat },
+      {
+        originProtocolId: protocol.id,
+        code: itemCode(protocol.code, seq),
+        title: '',
+        status: isDefectType ? 'offen' : 'info',
+        priority: 'normal',
+        observerIds: [],
+        category: cat,
+        itemType: cur?.itemType || cat,
+        ...(isDefectType ? { defect: true, defectType: settings.defectTypes[0], location: cur?.location } : {}),
+      },
       protocol.projectId,
     );
     await save<Entry>('entry', null, { itemId: id, protocolId: protocol.id, date: protocol.date, text: null, addendum: false, fileIds: [] }, protocol.projectId);
@@ -161,6 +178,9 @@ export function Workspace() {
         </Link>
         <Link className="btn" to={`/p/${project.id}/plaene`} title="Planverwaltung">
           Pläne
+        </Link>
+        <Link className="btn" to={`/p/${project.id}/maengel`} title="Mängelmanagement">
+          Mängel
         </Link>
         <label className="toggle">
           <input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} /> Abgeschlossene
@@ -230,7 +250,7 @@ export function Workspace() {
           <div className="col-body">
             {!protocols.length && <div className="empty small">Keine Protokolle.</div>}
             {protocols.map((p) => {
-              const open = p.itemIds.filter((id) => itemInProtocol(d.itemMap.get(id) || ({} as Item), p).status === 'offen').length;
+              const open = p.itemIds.filter((id) => isOpenStatus(itemInProtocol(d.itemMap.get(id) || ({} as Item), p).status)).length;
               return (
                 <button key={p.id} className={'proto-card' + (protocol?.id === p.id ? ' on' : '')} onClick={() => select({ p: p.id, i: null })}>
                   <div className="pc-top">
@@ -386,7 +406,9 @@ function ItemsColumn({
                   <button key={it.id} className={['item-card', it.status, it.priority === 'hoch' ? 'hoch' : '', itemId === it.id ? 'on' : ''].join(' ')} onClick={() => onSelect(it.id)}>
                     <div className="ic-top">
                       <span className="pfx">{it.code}</span>
-                      <span className="ic-status">{it.status === 'offen' ? 'Offen' : it.status === 'erledigt' ? 'Erledigt ✓' : ''}</span>
+                      <span className="ic-status">
+                        {it.defect && <span className="badge red">Mangel</span>} {it.status === 'info' ? '' : it.status === 'erledigt' ? 'Erledigt ✓' : STATUS_LABEL[it.status]}
+                      </span>
                     </div>
                     <div className="ic-title">{it.title || <i className="muted">(ohne Kurztext)</i>}</div>
                     <div className="ic-company">{it.companyId ? companyMap.get(it.companyId)?.name : 'Projektteam'}</div>
@@ -395,7 +417,7 @@ function ItemsColumn({
                       <span>🏷 {it.category || '–'}</span>
                     </div>
                     <div className="ic-meta">
-                      <span className={due && due < todayIso() && it.status === 'offen' ? 'overdue' : ''}>⚑ {due ? dueText(due) : '–'}</span>
+                      <span className={due && due < todayIso() && isOpenStatus(it.status) ? 'overdue' : ''}>⚑ {due ? dueText(due) : '–'}</span>
                       <span>
                         {fc > 0 && <span title={`${fc} Anhänge`}>📎{fc} </span>}
                         {it.priority === 'hoch' && <span className="prio-dot" title="Hohe Priorität" />}
@@ -422,7 +444,7 @@ function ItemsColumn({
   );
 }
 
-function ItemDetail({ d, protocol, item: raw, locked, onBack, onRemoved }: { d: D; protocol: Protocol; item: Item; locked: boolean; onBack: () => void; onRemoved: () => void }) {
+export function ItemDetail({ d, protocol, item: raw, locked, onBack, onRemoved }: { d: D; protocol: Protocol; item: Item; locked: boolean; onBack: () => void; onRemoved: () => void }) {
   const settings = useSettings();
   const { contacts, companies, companyMap, contactMap } = useGlobal();
   const lists = projectLists(d.project!, settings);
@@ -574,9 +596,10 @@ function ItemDetail({ d, protocol, item: raw, locked, onBack, onRemoved }: { d: 
         </label>
         <label className="f">
           Status
-          <select value={item.status} disabled={ro} onChange={(e) => setItem({ status: e.target.value as any, doneAt: e.target.value === 'erledigt' ? todayIso() : null })}>
+          <select value={item.status} disabled={ro} onChange={(e) => setItem(statusPatch(item, e.target.value as ItemStatus))}>
             <option value="info">Info</option>
             <option value="offen">Offen</option>
+            <option value="behoben">Behoben gemeldet</option>
             <option value="erledigt">Erledigt</option>
           </select>
         </label>
@@ -588,6 +611,41 @@ function ItemDetail({ d, protocol, item: raw, locked, onBack, onRemoved }: { d: 
           Zu erledigen bis
           <DateInput disabled={ro} value={item.dueTo} onChange={(v) => setItem({ dueTo: v })} />
         </label>
+      </div>
+
+      <div className="defect-box">
+        <label className="check" style={{ margin: 0 }}>
+          <input type="checkbox" disabled={ro} checked={!!item.defect} onChange={(e) => setItem({ defect: e.target.checked, ...(e.target.checked && !item.defectType ? { defectType: settings.defectTypes[0] } : {}) })} />
+          <b>Als Mangel führen</b>
+        </label>
+        {item.defect && (
+          <div className="fields" style={{ marginTop: 8 }}>
+            <label className="f">
+              Mangelart
+              {ro ? <input disabled value={item.defectType || ''} /> : <ListSelect value={item.defectType} options={settings.defectTypes} onChange={(v) => setItem({ defectType: v })} />}
+            </label>
+            <label className="f">
+              Abzug / Kosten (€)
+              <LazyInput
+                disabled={ro}
+                inputMode="decimal"
+                value={item.cost != null ? String(item.cost).replace('.', ',') : ''}
+                onSave={(v) => {
+                  const n = parseFloat(v.replace(/\./g, '').replace(',', '.'));
+                  setItem({ cost: v.trim() && !isNaN(n) ? n : null });
+                }}
+              />
+            </label>
+            <label className="f">
+              Behoben gemeldet am
+              <DateInput disabled={ro} value={item.fixedReportedAt} onChange={(v) => setItem({ fixedReportedAt: v })} />
+            </label>
+            <label className="f">
+              Abgenommen am
+              <DateInput disabled={ro} value={item.acceptedAt} onChange={(v) => setItem({ acceptedAt: v })} />
+            </label>
+          </div>
+        )}
       </div>
 
       <MarkerSection d={d} item={item} ro={ro} onSet={(planMarkers) => setItem({ planMarkers })} />
@@ -782,4 +840,14 @@ function MarkerSection({ d, item, ro, onSet }: { d: D; item: Item; ro: boolean; 
       )}
     </div>
   );
+}
+
+/** Statuswechsel inkl. Datumsfelder (behoben gemeldet / abgenommen) */
+export function statusPatch(item: Item, status: ItemStatus): Partial<Item> {
+  const t = todayIso();
+  const p: Partial<Item> = { status, doneAt: status === 'erledigt' ? t : null };
+  if (status === 'behoben' && !item.fixedReportedAt) p.fixedReportedAt = t;
+  if (status === 'erledigt' && item.defect && !item.acceptedAt) p.acceptedAt = t;
+  if (status === 'offen') p.acceptedAt = null;
+  return p;
 }

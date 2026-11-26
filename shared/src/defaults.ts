@@ -40,10 +40,10 @@ export const DEFAULT_SETTINGS: Omit<Settings, 'id' | 'type'> = {
     { key: 'BBP', name: 'Baubesprechungsprotokoll', prefix: 'BBP', mode: 'fortlaufend', active: true },
     { key: 'JF', name: 'AG Jour fixe', prefix: 'JF', mode: 'fortlaufend', active: true },
     { key: 'PBP', name: 'Planungsbesprechung', prefix: 'PBP', mode: 'fortlaufend', active: true },
-    { key: 'MB', name: 'Mängelbegehung', prefix: 'MB', mode: 'fortlaufend', active: true },
+    { key: 'MB', name: 'Mängelbegehung', prefix: 'MB', mode: 'fortlaufend', active: true, defects: true },
     { key: 'BAUKG', name: 'BauKG-Begehung', prefix: 'BKG', mode: 'standard', active: true },
     { key: 'AK', name: 'Aktennotiz', prefix: 'AK', mode: 'standard', active: true },
-    { key: 'ABN', name: 'Abnahme / Übergabe', prefix: 'ABN', mode: 'standard', active: true },
+    { key: 'ABN', name: 'Abnahme / Übergabe', prefix: 'ABN', mode: 'standard', active: true, defects: true },
   ],
   categories: [
     '00.Information',
@@ -69,6 +69,7 @@ export const DEFAULT_SETTINGS: Omit<Settings, 'id' | 'type'> = {
     '08.Qualität',
     '09.Sicherheit',
   ],
+  defectTypes: ['Ausführungsmangel', 'Restarbeit', 'Beschädigung', 'Gewährleistungsmangel', 'Planungsmangel'],
   trades: ['Baumeister', 'Zimmermann', 'Dachdecker', 'Spengler', 'Elektro', 'HKLS', 'Trockenbau', 'Estrich', 'Bodenbeläge', 'Maler', 'Fenster', 'Tischler', 'Schlosser', 'Fliesen'],
   pdf: DEFAULT_PDF,
   mailSubjectTemplate: '{projekt} – {protokoll} vom {datum}',
@@ -87,7 +88,8 @@ export function normalize<T extends AnyRecord>(r: T): T {
   switch (r.type) {
     case 'settings': {
       const s = r as Settings;
-      return { ...DEFAULT_SETTINGS, ...s, pdf: { ...DEFAULT_PDF, ...(s.pdf || {}), fields: { ...DEFAULT_PDF.fields, ...(s.pdf?.fields || {}) } } } as T;
+      const protocolTypes = (s.protocolTypes || DEFAULT_SETTINGS.protocolTypes).map((t) => (t.defects === undefined ? { ...t, defects: ['MB', 'ABN'].includes(t.key) } : t));
+      return { ...DEFAULT_SETTINGS, ...s, protocolTypes, pdf: { ...DEFAULT_PDF, ...(s.pdf || {}), fields: { ...DEFAULT_PDF.fields, ...(s.pdf?.fields || {}) } } } as T;
     }
     case 'project': {
       const p = r as Project;

@@ -18,6 +18,7 @@ import {
   type Project,
   type Protocol,
   type UserInfo,
+  isOpenStatus,
 } from '../../../shared/src/index';
 
 export function ProjectPage() {
@@ -256,11 +257,11 @@ function OpenItems({ d }: { d: D }) {
   const lastProtocolOf = (itemId: string) =>
     d.protocols.filter((p) => p.itemIds.includes(itemId)).sort((a, b) => b.date.localeCompare(a.date))[0];
   const list = d.items
-    .filter((i) => i.status === 'offen')
+    .filter((i) => isOpenStatus(i.status))
     .filter((i) => !company || i.companyId === company)
     .filter((i) => !onlyOverdue || (i.dueTo || i.dueFrom || '9999') < today)
     .sort((a, b) => (a.dueTo || a.dueFrom || '9999').localeCompare(b.dueTo || b.dueFrom || '9999'));
-  const companies = [...new Set(d.items.filter((i) => i.status === 'offen' && i.companyId).map((i) => i.companyId!))];
+  const companies = [...new Set(d.items.filter((i) => isOpenStatus(i.status) && i.companyId).map((i) => i.companyId!))];
   return (
     <>
       <div className="row" style={{ marginBottom: 12, alignItems: 'center' }}>

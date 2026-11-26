@@ -41,6 +41,8 @@ export interface ProtocolTypeDef {
   prefix: string; // Nummernpräfix, z.B. "BBP"
   mode: ProtocolMode;
   active: boolean;
+  /** neue Punkte dieser Protokollart sind Mängel */
+  defects?: boolean;
 }
 
 export interface PdfLayout {
@@ -82,6 +84,7 @@ export interface Settings extends BaseRecord {
   protocolTypes: ProtocolTypeDef[];
   categories: string[]; // Zusatzfeld (00.Information …)
   itemTypes: string[]; // Typ
+  defectTypes: string[]; // Mangelarten
   trades: string[]; // Gewerke
   pdf: PdfLayout;
   mailSubjectTemplate: string;
@@ -181,7 +184,8 @@ export interface Protocol extends BaseRecord {
   sourceFileId?: string | null;
 }
 
-export type ItemStatus = 'info' | 'offen' | 'erledigt';
+/** 'behoben' = vom AN als behoben gemeldet, Prüfung durch ÖBA ausständig (v.a. bei Mängeln) */
+export type ItemStatus = 'info' | 'offen' | 'behoben' | 'erledigt';
 
 export interface Item extends BaseRecord {
   type: 'item';
@@ -203,6 +207,12 @@ export interface Item extends BaseRecord {
   doneAt?: string | null;
   /** Verortung im Plan (relative Koordinaten 0..1) */
   planMarkers?: PlanMarker[];
+  /** Mängelmanagement */
+  defect?: boolean;
+  defectType?: string; // z.B. Ausführungsmangel, Restarbeit, Gewährleistung
+  cost?: number | null; // Abzug / Kosten (€)
+  fixedReportedAt?: string | null; // vom AN als behoben gemeldet
+  acceptedAt?: string | null; // von der ÖBA abgenommen
 }
 
 export interface PlanMarker {
