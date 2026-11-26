@@ -701,7 +701,7 @@
     }
     const m = modal('Server-Abgleich (NAS)', body, [
       { t: 'Jetzt abgleichen', cls: 'pri', fn: () => { closeModal(); KS.sync(); } },
-      { t: '← Zum Projektmanagement', fn: () => { location.href = P && P.meta && P.meta.pwProjectId ? '/p/' + encodeURIComponent(P.meta.pwProjectId) : '/'; } },
+      { t: '← Zum Projektmanagement', fn: () => { KS.goTop(P && P.meta && P.meta.pwProjectId ? '/p/' + encodeURIComponent(P.meta.pwProjectId) : '/'); } },
       { t: 'Abmelden', fn: () => KS.logout() },
       { t: 'Schließen', fn: closeModal },
     ], true);
@@ -760,7 +760,7 @@
     let p = all.find((x) => x.meta && x.meta.pwProjectId === pw) || (nr ? all.find((x) => x.meta && !x.meta.pwProjectId && String(x.meta.projNr || '').trim() === nr) : null);
     if (!p) {
       const name = q.get('name') || 'Projekt';
-      if (!confirm(`Für „${(nr ? nr + ' ' : '') + name}“ gibt es noch keine Kostenverfolgung.\n\nJetzt anlegen (Gliederung nach ÖNORM B 1801-1)?`)) { location.href = '/p/' + encodeURIComponent(pw); return; }
+      if (!confirm(`Für „${(nr ? nr + ' ' : '') + name}“ gibt es noch keine Kostenverfolgung.\n\nJetzt anlegen (Gliederung nach ÖNORM B 1801-1)?`)) { KS.goTop('/p/' + encodeURIComponent(pw)); return; }
       p = emptyProject();
       Object.assign(p.meta, { projNr: nr, projekt: name, ag: q.get('ag') || '', agAdresse: q.get('agAdr') || '', bauort: q.get('ort') || '', stichtag: todayISO() });
       if (STORE.user) p.meta.bearbeiter = STORE.user;
@@ -847,4 +847,38 @@
     if (KS.status === 'ok') KS.firms.push();
     return r;
   };
+
+  /* ---------------- Eingebettet im Projektmanagement (Reiter „04 Kosten“) ---------------- */
+  KS.embed = window.top !== window || new URLSearchParams(location.search).get('embed') === '1';
+  /** Navigation im Hauptfenster (nicht im eingebetteten Rahmen) */
+  KS.goTop = function (url) { try { (window.top || window).location.href = url; } catch (e) { location.href = url; } };
+  if (KS.embed) {
+    document.documentElement.classList.add('ks-embed');
+    const st = document.createElement('style');
+    st.textContent = `
+      .ks-embed body > header > div:first-child { display: none !important; }
+      .ks-embed #ks-back { display: none !important; }
+      .ks-embed #backup-status-badge { display: none !important; }
+      .ks-embed #start { display: none !important; }
+      .ks-embed #tabs { align-items: center; }
+      .ks-embed .ks-acts { margin-left: auto; display: flex; gap: 6px; align-items: center; padding-left: 12px; flex-shrink: 0; }
+      .ks-embed .ks-acts > * { padding-top: 6px !important; padding-bottom: 6px !important; }
+      .ks-embed #ks-pill { bottom: 10px; left: 10px; }`;
+    document.head.appendChild(st);
+    const moveActions = () => {
+      const hdr = document.querySelector('body > header');
+      const nav = document.getElementById('tabs');
+      if (!hdr || !nav || nav.querySelector('.ks-acts')) return !!(nav && nav.querySelector('.ks-acts'));
+      const top = hdr.firstElementChild;
+      const acts = top && top.lastElementChild;
+      if (!acts) return false;
+      acts.classList.add('ks-acts');
+      // „Start“ (Startseite der Kostenverfolgung) wird im Projektmanagement nicht gebraucht
+      acts.querySelectorAll('button').forEach((b) => { if (/START\.open/.test(b.getAttribute('onclick') || '')) b.remove(); });
+      nav.appendChild(acts);
+      return true;
+    };
+    const tryMove = () => { if (!moveActions()) setTimeout(tryMove, 300); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryMove); else tryMove();
+  }
 })();

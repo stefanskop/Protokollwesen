@@ -54,6 +54,10 @@ Die Kostenverfolgung (ÖNORM B 1801-1: Budget, Aufträge, Nachträge, Rechnungen
 - Mängelseite je Projekt mit Filtern, Schnellknöpfen, Planansicht (Marker farbig nach Status)
 - Mängelliste als PDF; Aufforderung zur Mängelbehebung (ÖNORM B 2110) je Firma per E-Mail
 
+### Kostenverfolgung (Reiter „04 Kosten“)
+- eigenständige Web-App `kosten/Kostenverfolgung.html`, im Projekt eingebettet (`/p/<Projekt>/kosten`)
+- Update der Kostenverfolgung: nur `kosten/Kostenverfolgung.html` ersetzen – die Anbindung (Server-Abgleich, Einbettung, gemeinsame Firmen) liegt getrennt in `kosten/kosten-sync.js`
+
 ### Planverwaltung
 - Pläne je Projekt in Ordnern, Indexstände, Planansicht, Planmarker (auch im Protokoll-PDF), Versand per E-Mail
 

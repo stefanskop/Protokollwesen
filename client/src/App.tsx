@@ -12,6 +12,7 @@ import { Workspace } from './pages/Workspace';
 import { ImportPage } from './pages/Import';
 import { PlansPage } from './pages/Plans';
 import { DefectsPage } from './pages/Defects';
+import { KostenPage } from './pages/Kosten';
 import { useProjects } from './data';
 import { Header } from './components/Header';
 
@@ -92,6 +93,7 @@ export function App() {
               <Route path="/plaene" element={<LastProject to="plaene" />} />
               <Route path="/maengel" element={<LastProject to="maengel" />} />
               <Route path="/p/:pid/maengel" element={<DefectsPage />} />
+              <Route path="/p/:pid/kosten" element={<KostenPage />} />
               <Route
                 path="/p/:pid/einstellungen"
                 element={
@@ -132,7 +134,7 @@ export function App() {
 
 function Main({ children }: { children: React.ReactNode }) {
   const loc = useLocation();
-  return <main className={'main' + (/^\/p\/[^/]+(\/plaene|\/maengel)?\/?$/.test(loc.pathname) ? ' main-ws' : '')}>{children}</main>;
+  return <main className={'main' + (/^\/p\/[^/]+(\/plaene|\/maengel|\/kosten)?\/?$/.test(loc.pathname) ? ' main-ws' : '')}>{children}</main>;
 }
 
 export function SyncBadge() {

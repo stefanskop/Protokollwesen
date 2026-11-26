@@ -2,7 +2,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useProjects, useProjectData } from '../data';
 import { useUser, SyncBadge } from '../App';
-import { kostenUrl } from './ProjectTabs';
 
 type Tab = { key: string; to: string; label: string; icon: string; color: string; count?: number; external?: boolean };
 
@@ -24,7 +23,7 @@ export function Header() {
         { key: '', to: `/p/${pid}`, label: '01 Protokolle', icon: 'fa-clipboard-list', color: 'ic-sky', count: d.protocols.length },
         { key: 'plaene', to: `/p/${pid}/plaene`, label: '02 Pläne', icon: 'fa-map', color: 'ic-emerald', count: d.plans.length },
         { key: 'maengel', to: `/p/${pid}/maengel`, label: '03 Mängel', icon: 'fa-triangle-exclamation', color: 'ic-rose', count: openDefects },
-        { key: 'kosten', to: kostenUrl(project), label: '04 Kosten', icon: 'fa-coins', color: 'ic-amber2', external: true },
+        { key: 'kosten', to: `/p/${pid}/kosten`, label: '04 Kosten', icon: 'fa-coins', color: 'ic-amber2' },
         { key: 'einstellungen', to: `/p/${pid}/einstellungen`, label: '05 Einstellungen', icon: 'fa-gear', color: 'ic-slate' },
       ]
     : [
