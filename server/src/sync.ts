@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { db } from './db';
 import { authenticate, type AuthUser } from './auth';
@@ -47,7 +48,7 @@ export function ensureSettings() {
   }
 }
 
-function validate(user: AuthUser, m: Mutation, existing: Row | undefined, projects: Set<string>): string | null {
+function validate(user: AuthUser, m: Mutation, existing: Row | undefined, projects: Set<string>, skipLock = false): string | null {
   if (!GLOBAL_TYPES.has(m.type) && !PROJECT_TYPES.has(m.type)) return 'Unbekannter Typ';
   if (existing && existing.type !== m.type) return 'Typ passt nicht';
   if (m.type === 'settings' && user.role !== 'admin') return 'Einstellungen nur durch Administrator';
@@ -60,7 +61,7 @@ function validate(user: AuthUser, m: Mutation, existing: Row | undefined, projec
     if (!pid || !projects.has(pid)) return 'Kein Zugriff auf Projekt';
   }
   // Sperre: abgeschlossene fortlaufende Protokolle
-  if (m.type === 'entry') {
+  if (m.type === 'entry' && !skipLock) {
     const data = existing ? { ...JSON.parse(existing.data), ...m.set } : m.set;
     const protoIds = new Set([data.protocolId, existing && JSON.parse(existing.data).protocolId].filter(Boolean));
     for (const pid of protoIds) {
@@ -79,7 +80,7 @@ function validate(user: AuthUser, m: Mutation, existing: Row | undefined, projec
   return null;
 }
 
-export function applyMutations(user: AuthUser, device: string | undefined, muts: Mutation[]): PushResult {
+export function applyMutations(user: AuthUser, device: string | undefined, muts: Mutation[], opts: { skipLock?: boolean } = {}): PushResult {
   const res: PushResult = { applied: [], rejected: [], conflicts: [] };
   const seen = db.prepare(`SELECT 1 FROM mutations WHERE mid=?`);
   const changedSince = db.prepare(`SELECT fields, device FROM changes WHERE record_id=? AND rev>?`);
@@ -98,7 +99,7 @@ export function applyMutations(user: AuthUser, device: string | undefined, muts:
         continue;
       }
       const existing = getRow.get(m.id) as Row | undefined;
-      const err = validate(user, m, existing, projects);
+      const err = validate(user, m, existing, projects, opts.skipLock);
       if (err) {
         res.rejected.push({ mid: m.mid, reason: err });
         insMut.run(m.mid, new Date().toISOString());
@@ -174,6 +175,21 @@ export function syncRoutes(app: FastifyInstance) {
       const maxRev = rows.length ? rows[rows.length - 1].rev : since;
       const records = rows.filter((x) => canSee(req.user!, x, projects)).map((x) => ({ ...JSON.parse(x.data), rev: x.rev }));
       return { records, rev: maxRev, more: rows.length === LIMIT, projectIds: [...projects] };
+    });
+
+    // Projekt löschen: alle Datensätze des Projekts als gelöscht markieren (Firmen & Kontakte bleiben)
+    r.delete('/api/projects/:id', async (req, reply) => {
+      const { id } = req.params as any;
+      const projects = accessibleProjects(req.user!);
+      if (!projects.has(id)) return reply.code(403).send({ error: 'Kein Zugriff auf dieses Projekt' });
+      const rows = db.prepare(`SELECT id, type, rev FROM records WHERE project_id=? AND deleted=0`).all(id) as { id: string; type: string; rev: number }[];
+      const now = new Date().toISOString();
+      const muts = rows.map((r) => ({ mid: crypto.randomUUID(), id: r.id, type: r.type as any, baseRev: r.rev, set: { deleted: true }, ts: now }));
+      // Projekt zuletzt
+      muts.sort((a, b) => Number(a.type === 'project') - Number(b.type === 'project'));
+      const res = applyMutations(req.user!, req.device, muts, { skipLock: true });
+      console.log(`[projekt] ${id} gelöscht von ${req.user!.email}: ${res.applied.length} Datensätze`);
+      return { ok: true, deleted: res.applied.length };
     });
 
     // Einzelnen Datensatz neu laden (z.B. nach abgelehnter Änderung)

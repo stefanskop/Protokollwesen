@@ -75,8 +75,8 @@ export function ContactsPage() {
 }
 
 export function CompanyForm({ value, onClose, onSaved }: { value: Partial<Company>; onClose: () => void; onSaved?: (id: string) => void }) {
-  const [c, setC] = useState({ name: '', address: '', phone: '', email: '', uid: '', ...value });
-  const f = (k: 'name' | 'address' | 'phone' | 'email' | 'uid') => ({ value: c[k] || '', onChange: (e: any) => setC({ ...c, [k]: e.target.value }) });
+  const [c, setC] = useState({ name: '', address: '', phone: '', email: '', uid: '', trade: '', ...value });
+  const f = (k: 'name' | 'address' | 'phone' | 'email' | 'uid' | 'trade') => ({ value: c[k] || '', onChange: (e: any) => setC({ ...c, [k]: e.target.value }) });
   return (
     <Modal
       title={value.id ? 'Firma bearbeiten' : 'Neue Firma'}
@@ -96,7 +96,7 @@ export function CompanyForm({ value, onClose, onSaved }: { value: Partial<Compan
             className="btn primary"
             disabled={!c.name}
             onClick={async () => {
-              const id = await save<Company>('company', value.id || null, { name: c.name, address: c.address, phone: c.phone, email: c.email, uid: c.uid });
+              const id = await save<Company>('company', value.id || null, { name: c.name, address: c.address, phone: c.phone, email: c.email, uid: c.uid, trade: c.trade });
               onSaved?.(id);
               onClose();
             }}
@@ -106,10 +106,16 @@ export function CompanyForm({ value, onClose, onSaved }: { value: Partial<Compan
         </>
       }
     >
-      <label className="f">
-        Firmenname *
-        <input {...f('name')} autoFocus />
-      </label>
+      <div className="grid2">
+        <label className="f">
+          Firmenname *
+          <input {...f('name')} autoFocus />
+        </label>
+        <label className="f">
+          Gewerk
+          <input {...f('trade')} placeholder="z.B. Baumeister, Elektro" />
+        </label>
+      </div>
       <div className="grid2">
         <label className="f">
           Adresse

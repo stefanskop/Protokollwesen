@@ -96,6 +96,7 @@ export interface Company extends BaseRecord {
   name: string;
   address?: string;
   uid?: string; // UID-Nr. (auch für die Kostenverfolgung)
+  trade?: string; // Gewerk der Firma (Vorgabe)
   phone?: string;
   email?: string;
   note?: string;

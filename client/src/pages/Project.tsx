@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { api } from '../api';
+import { syncNow } from '../sync';
 import { save } from '../db';
 import { useProjectData, useGlobal, useSettings, addFile, useFileUrl } from '../data';
 import { Modal, LazyInput, StringListEditor, DateInput } from '../components/ui';
@@ -33,18 +34,17 @@ export function ProjectPage() {
     <>
       <div className="card sec-card">
         <div className="sec-h" style={{ border: 'none', margin: 0, padding: 0 }}>
-          <i className="fa-solid fa-sliders" /> 00 Projektdaten, Beteiligte &amp; offene Punkte
+          <i className="fa-solid fa-sliders" /> 00 Projektdaten &amp; offene Punkte
           {p.archived && <span className="badge">archiviert</span>}
         </div>
         <div className="muted small" style={{ marginTop: 4 }}>
-          Stammdaten des Projekts, Projektbeteiligte (Beteiligtenliste der Protokolle) und alle offenen Punkte über alle Protokolle.
+          Stammdaten des Projekts (verknüpft mit „00 Stammdaten“ der Kostenverfolgung) und alle offenen Punkte über alle Protokolle. Projektbeteiligte unter „01 Kontakte“.
         </div>
       </div>
       <div className="tabs">
         {(
           [
             ['daten', 'fa-sliders', 'Stammdaten'],
-            ['beteiligte', 'fa-users', `Beteiligte (${p.participants.length})`],
             ['offen', 'fa-list-check', 'Offene Punkte'],
           ] as const
         ).map(([k, ic, l]) => (
@@ -397,6 +397,7 @@ function ProjectData({ project }: { project: Project }) {
   const settings = useSettings();
   const [users, setUsers] = useState<UserInfo[]>([]);
   const img = useFileUrl(project.imageFileId);
+  const nav = useNavigate();
   useEffect(() => {
     api<UserInfo[]>('/api/users').then(setUsers).catch(() => {});
   }, []);
@@ -487,9 +488,42 @@ function ProjectData({ project }: { project: Project }) {
           </label>
         ))}
       </div>
-      <button className="btn" onClick={() => set({ archived: !project.archived })}>
-        {project.archived ? 'Projekt reaktivieren' : 'Projekt archivieren'}
-      </button>
+      <div className="card">
+        <h3>
+          <i className="fa-solid fa-box-archive" /> 4. Projekt archivieren oder löschen
+        </h3>
+        <div className="row" style={{ alignItems: 'center' }}>
+          <div className="muted small">
+            Archivierte Projekte bleiben vollständig erhalten und erscheinen auf der Startseite unter „Archivierte“. Beim Löschen werden alle Protokolle, Punkte, Pläne, Mängel und Fotos des Projekts entfernt – Firmen
+            und Kontakte bleiben erhalten. Die Kostenverfolgung des Projekts wird nicht gelöscht.
+          </div>
+          <div style={{ display: 'flex', gap: 8, flex: '0 0 auto' }}>
+            <button className="btn" onClick={() => set({ archived: !project.archived })}>
+              <i className="fa-solid fa-box-archive" /> {project.archived ? 'Projekt reaktivieren' : 'Projekt archivieren'}
+            </button>
+            <button className="btn danger" onClick={() => deleteProject(project, nav)}>
+              <i className="fa-solid fa-trash" /> Projekt löschen
+            </button>
+          </div>
+        </div>
+      </div>
     </>
   );
+}
+
+async function deleteProject(project: Project, nav: (to: string) => void) {
+  const label = `${project.number ? project.number + ' ' : ''}${project.name}`;
+  if (!confirm(`Projekt „${label}“ wirklich löschen?\n\nAlle Protokolle, Punkte, Pläne, Mängel und Fotos dieses Projekts werden entfernt. Firmen und Kontakte bleiben erhalten.`)) return;
+  const typed = prompt(`Zur Bestätigung bitte die Projektnummer bzw. – falls keine vorhanden – den Projektnamen eingeben:\n\n${project.number || project.name}`);
+  if (typed === null) return;
+  if (typed.trim() !== (project.number || project.name).trim()) return alert('Eingabe stimmt nicht überein – das Projekt wurde nicht gelöscht.');
+  try {
+    await syncNow();
+    await api('/api/projects/' + encodeURIComponent(project.id), { method: 'DELETE' });
+    await syncNow();
+    alert(`Projekt „${label}“ wurde gelöscht.`);
+    nav('/');
+  } catch (e: any) {
+    alert(e.status ? 'Löschen nicht möglich: ' + e.message : 'Keine Verbindung zum Server – Löschen ist nur online möglich.');
+  }
 }

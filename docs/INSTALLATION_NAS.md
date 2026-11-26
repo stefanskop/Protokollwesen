@@ -73,11 +73,11 @@ Der Container Manager lädt das Programm und startet es. Unter **Container** mus
 ### 5a – Adresse (DDNS)
 Systemsteuerung → **Externer Zugriff** → DDNS → **Hinzufügen**:
 - Dienstanbieter: **Synology**
-- Hostname: z. B. `skop-bau` → ergibt `skop-bau.synology.me`
+- Hostname: z. B. `skop-bauconsulting` → ergibt `skop-bauconsulting.synology.me`
 - Haken bei „Zertifikat von Let's Encrypt erhalten“ setzen
 
 ### 5b – Zertifikat
-Systemsteuerung → **Sicherheit → Zertifikat**. Das Let's-Encrypt-Zertifikat für `skop-bau.synology.me` sollte dort erscheinen. Falls nicht: **Hinzufügen → Neues Zertifikat → Von Let's Encrypt**.
+Systemsteuerung → **Sicherheit → Zertifikat**. Das Let's-Encrypt-Zertifikat für `skop-bauconsulting.synology.me` sollte dort erscheinen. Falls nicht: **Hinzufügen → Neues Zertifikat → Von Let's Encrypt**.
 
 ### 5c – Weiterleitung zum Programm (Reverse Proxy)
 Systemsteuerung → **Anmeldeportal → Erweitert → Reverse Proxy → Erstellen**:
@@ -85,12 +85,12 @@ Systemsteuerung → **Anmeldeportal → Erweitert → Reverse Proxy → Erstelle
 | | Quelle | Ziel |
 |---|---|---|
 | Protokoll | HTTPS | HTTP |
-| Hostname | `skop-bau.synology.me` | `localhost` |
+| Hostname | `skop-bauconsulting.synology.me` | `localhost` |
 | Port | `8443` | `8080` |
 
 Unter „Benutzerdefinierte Kopfzeile“ → Erstellen → **WebSocket** hinzufügen.
 
-Danach unter Sicherheit → Zertifikat → **Einstellungen** dem Dienst `skop-bau.synology.me:8443` das Let's-Encrypt-Zertifikat zuweisen.
+Danach unter Sicherheit → Zertifikat → **Einstellungen** dem Dienst `skop-bauconsulting.synology.me:8443` das Let's-Encrypt-Zertifikat zuweisen.
 
 ### 5d – Router
 Im Router (Portweiterleitung) **nur Port 8443** an die NAS weiterleiten. Die DSM-Oberfläche selbst bleibt dadurch von außen unerreichbar.
@@ -99,7 +99,7 @@ Im Router (Portweiterleitung) **nur Port 8443** an die NAS weiterleiten. Die DSM
 
 ## Schritt 6 – iPad und PCs einrichten
 
-1. Am iPad in **Safari** `https://skop-bau.synology.me:8443` öffnen und anmelden.
+1. Am iPad in **Safari** `https://skop-bauconsulting.synology.me:8443` öffnen und anmelden.
 2. **Teilen** (Quadrat mit Pfeil) → **Zum Home-Bildschirm**.
 3. Ab jetzt das Programm über das Symbol am Home-Bildschirm starten. Es funktioniert dann auch ohne Netz.
 

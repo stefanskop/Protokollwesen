@@ -1,6 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import nodemailer from 'nodemailer';
-import { getServerSetting, setServerSetting } from './db';
+import fs from 'node:fs';
+import path from 'node:path';
+import { getServerSetting, setServerSetting, FILES_DIR } from './db';
 import { authenticate, requireAdmin } from './auth';
 
 interface Smtp {
@@ -51,22 +53,43 @@ export function mailRoutes(app: FastifyInstance) {
     r.post('/api/mail/send', { bodyLimit: 40 * 1024 * 1024 }, async (req, reply) => {
       const s = getServerSetting<Smtp>('smtp', DEFAULT_SMTP);
       if (!s.host) return reply.code(400).send({ error: 'E-Mail-Versand ist noch nicht eingerichtet (Einstellungen → E-Mail)' });
-      const { to, cc, subject, text, attachments } = req.body as { to: string[]; cc?: string[]; subject: string; text: string; attachments: { filename: string; base64: string }[] };
-      if (!to?.length) return reply.code(400).send({ error: 'Keine Empfänger' });
+      const { to, cc, subject, text, attachments, fileIds } = req.body as {
+        to: string[];
+        cc?: string[];
+        subject: string;
+        text: string;
+        attachments?: { filename: string; base64: string }[];
+        /** Dateien direkt aus der Server-Ablage anhängen (z.B. Pläne) */
+        fileIds?: { id: string; filename: string }[];
+      };
+      const recipients = (to || []).map((x) => String(x).trim()).filter((x) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
+      if (!recipients.length) return reply.code(400).send({ error: 'Keine gültige Empfängeradresse' });
+      const files: { filename: string; path?: string; content?: Buffer }[] = (attachments || []).map((a) => ({ filename: a.filename, content: Buffer.from(a.base64, 'base64') }));
+      for (const f of fileIds || []) {
+        if (!/^[a-zA-Z0-9-]{8,64}$/.test(f.id)) continue;
+        const p = path.join(FILES_DIR, f.id.slice(0, 2), f.id);
+        if (!fs.existsSync(p)) return reply.code(409).send({ error: `„${f.filename}“ ist noch nicht auf dem Server – bitte warten, bis „Synchronisiert“ angezeigt wird, und erneut senden.` });
+        files.push({ filename: f.filename, path: p });
+      }
+      const total = files.reduce((n, f) => n + (f.content ? f.content.length : fs.statSync(f.path!).size), 0);
+      if (total > 20 * 1024 * 1024)
+        return reply.code(413).send({ error: `Anhänge zu groß (${(total / 1048576).toFixed(1)} MB). Die meisten Mailserver nehmen höchstens ca. 20 MB an – bitte weniger Dateien auf einmal senden.` });
       const fromAddr = /<([^>]+)>/.exec(s.from)?.[1] || s.from;
       try {
         const info = await transport(s).sendMail({
           from: s.from,
           to: fromAddr, // Empfänger im BCC, damit Adressen nicht offengelegt werden
-          bcc: [...to, ...(s.bccSelf ? [fromAddr] : [])],
+          bcc: [...recipients, ...(s.bccSelf ? [fromAddr] : [])],
           cc,
           replyTo: req.user!.email,
           subject,
           text,
-          attachments: (attachments || []).map((a) => ({ filename: a.filename, content: Buffer.from(a.base64, 'base64') })),
+          attachments: files,
         });
+        console.log(`[mail] gesendet an ${recipients.length} Empfänger (${(total / 1048576).toFixed(1)} MB) von ${req.user!.email}`);
         return { ok: true, messageId: info.messageId };
       } catch (e: any) {
+        console.error('[mail] Versand fehlgeschlagen:', e.message);
         return reply.code(502).send({ error: 'Versand fehlgeschlagen: ' + e.message });
       }
     });

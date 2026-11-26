@@ -84,7 +84,7 @@ export function ImportPage() {
   return (
     <>
       <div className="topbar">
-        <h1>Import aus Baumaster</h1>
+        <h1>Projektimport</h1>
         <div className="grow" />
       </div>
       <div className="card">

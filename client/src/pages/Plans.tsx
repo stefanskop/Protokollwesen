@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { save, remove } from '../db';
 import { api } from '../api';
-import { getBlob } from '../sync';
+import { getBlob, syncNow } from '../sync';
 import { useProjectData, useProjects, useGlobal, useSettings, addFile, blobToDataUrl } from '../data';
 import { Modal, DateInput } from '../components/ui';
 import { PlanViewer, type ViewerMarker } from '../components/PlanViewer';
@@ -328,21 +328,19 @@ function PlanSendDialog({ d, plans, onClose }: { d: D; plans: Plan[]; onClose: (
     setBusy(true);
     setErr('');
     try {
-      const attachments = [];
-      for (const p of plans) {
-        const b = await getBlob(p.fileId);
-        if (!b) throw new Error(`${p.name} ist auf diesem Gerät nicht verfügbar`);
+      // Dateien liegen bereits auf dem Server – nur die Kennungen übergeben
+      const fileIds = plans.map((p) => {
         const ext = p.mime === 'application/pdf' ? '.pdf' : '.' + (p.mime.split('/')[1] || 'bin');
-        attachments.push({ filename: `${p.name}${p.index ? '_Index_' + p.index : ''}${ext}`, base64: (await blobToDataUrl(b)).split(',')[1] });
-      }
-      const size = attachments.reduce((n, a) => n + a.base64.length * 0.75, 0);
-      if (size > 25e6) throw new Error('Anhänge zu groß für den E-Mail-Versand (über 25 MB). Bitte weniger Pläne auswählen.');
+        return { id: p.fileId, filename: `${p.name}${p.index ? '_Index_' + p.index : ''}${ext}` };
+      });
+      await syncNow(); // noch nicht hochgeladene Pläne zuerst übertragen
       const recipients = [...to, ...extra.split(/[,;\s]+/).filter((x) => x.includes('@'))];
-      await api('/api/mail/send', { body: { to: recipients, subject, text: body, attachments } });
+      if (!recipients.length) throw new Error('Bitte mindestens einen Empfänger angeben.');
+      await api('/api/mail/send', { body: { to: recipients, subject, text: body, fileIds } });
       alert(`Pläne an ${recipients.length} Empfänger versendet.`);
       onClose();
     } catch (e: any) {
-      setErr(e.status === undefined && !e.message ? 'Keine Verbindung zum Server.' : e.message);
+      setErr(e.status ? e.message : e.message && !/fetch|network/i.test(e.message) ? e.message : 'Keine Verbindung zum Server – der Versand ist nur online möglich.');
     } finally {
       setBusy(false);
     }

@@ -777,6 +777,7 @@
     PRJ.open(p.id);
     KS.renderBack();
     KS.soon();
+    setTimeout(() => KS.metaSync(), 300);
   };
 
   /* ---------------- Gemeinsame Firmen & Kontakte ---------------- */
@@ -840,11 +841,54 @@
       } catch (e) { /* später erneut */ }
     },
   };
+
+  /* ---------------- Stammdaten mit dem Projektmanagement verknüpfen ---------------- */
+  // Projektmanagement-Feld ↔ Kostenverfolgung meta-Feld
+  const META_MAP = [['number', 'projNr'], ['name', 'projekt'], ['clientName', 'ag'], ['clientAddress', 'agAdresse'], ['address', 'bauort']];
+  const mid = () => (crypto.randomUUID ? crypto.randomUUID() : 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2));
+  KS.metaSync = async function () {
+    if (!KS.user || !ls.get(LS_TOKEN)) return;
+    KS.st.pmMeta = KS.st.pmMeta || {};
+    let changedLocal = false;
+    for (const p of Object.values(STORE.projects)) {
+      const pid = p.meta && p.meta.pwProjectId;
+      if (!pid || KS.st.localOnly[p.id]) continue;
+      let pm;
+      try { pm = await api('/api/records/' + encodeURIComponent(pid), { timeout: 15000 }); } catch (e) { continue; }
+      if (!pm || pm.deleted) continue;
+      const cost = {}, pmv = {};
+      META_MAP.forEach(([a, b]) => { cost[a] = String(p.meta[b] || '').trim(); pmv[a] = String(pm[a] || '').trim(); });
+      const snap = KS.st.pmMeta[p.id];
+      const toCost = {}, toPm = {};
+      META_MAP.forEach(([a]) => {
+        if (cost[a] === pmv[a]) return;
+        const pmChanged = !snap || pmv[a] !== snap[a];
+        const costChanged = snap && cost[a] !== snap[a];
+        if (pmChanged || !costChanged) { if (pmv[a] || !cost[a]) toCost[a] = pmv[a]; else toPm[a] = cost[a]; }
+        else toPm[a] = cost[a];
+      });
+      if (Object.keys(toCost).length) {
+        META_MAP.forEach(([a, b]) => { if (a in toCost) p.meta[b] = toCost[a]; });
+        STORE.dirty[p.id] = (STORE.dirty[p.id] || 0) + 1;
+        changedLocal = true;
+      }
+      if (Object.keys(toPm).length) {
+        try {
+          await api('/api/sync/push', { method: 'POST', body: { mutations: [{ mid: mid(), id: pid, type: 'project', baseRev: pm.rev || 0, set: toPm, ts: new Date().toISOString() }] } });
+        } catch (e) { continue; }
+      }
+      const merged = {};
+      META_MAP.forEach(([a, b]) => { merged[a] = String(p.meta[b] || '').trim(); });
+      KS.st.pmMeta[p.id] = merged;
+    }
+    KS.saveState();
+    if (changedLocal) { callPersist(); refreshUi(); KS.soon(); }
+  };
   // nach jedem Abgleich neue Auftragnehmer an „Firmen & Kontakte“ melden
   const syncOrig = KS.sync;
   KS.sync = async function () {
     const r = await syncOrig.apply(this, arguments);
-    if (KS.status === 'ok') KS.firms.push();
+    if (KS.status === 'ok') { KS.firms.push(); KS.metaSync(); }
     return r;
   };
 

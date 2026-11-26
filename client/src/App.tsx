@@ -13,6 +13,7 @@ import { ImportPage } from './pages/Import';
 import { PlansPage } from './pages/Plans';
 import { DefectsPage } from './pages/Defects';
 import { KostenPage } from './pages/Kosten';
+import { ProjectContactsPage } from './pages/ProjectContacts';
 import { useProjects } from './data';
 import { Header } from './components/Header';
 
@@ -80,7 +81,7 @@ export function App() {
     <UserCtx.Provider value={user}>
       <BrowserRouter>
         <div className="app2">
-          <Header />
+          <HeaderUnlessStart />
           <Main>
             <Notices />
             <Routes>
@@ -94,6 +95,7 @@ export function App() {
               <Route path="/maengel" element={<LastProject to="maengel" />} />
               <Route path="/p/:pid/maengel" element={<DefectsPage />} />
               <Route path="/p/:pid/kosten" element={<KostenPage />} />
+              <Route path="/p/:pid/kontakte" element={<ProjectContactsPage />} />
               <Route
                 path="/p/:pid/einstellungen"
                 element={
@@ -132,9 +134,14 @@ export function App() {
   );
 }
 
+function HeaderUnlessStart() {
+  const loc = useLocation();
+  return loc.pathname === '/' ? null : <Header />;
+}
+
 function Main({ children }: { children: React.ReactNode }) {
   const loc = useLocation();
-  return <main className={'main' + (/^\/p\/[^/]+(\/plaene|\/maengel|\/kosten)?\/?$/.test(loc.pathname) ? ' main-ws' : '')}>{children}</main>;
+  return <main className={'main' + (/^\/p\/[^/]+(\/plaene|\/maengel|\/kosten)?\/?$/.test(loc.pathname) ? ' main-ws' : loc.pathname === '/' ? ' main-start' : '')}>{children}</main>;
 }
 
 export function SyncBadge() {

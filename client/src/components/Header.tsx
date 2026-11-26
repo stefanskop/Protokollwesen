@@ -20,16 +20,16 @@ export function Header() {
   const tabs: Tab[] = project
     ? [
         { key: 'projekt', to: `/p/${pid}/projekt`, label: '00 Projektdaten', icon: 'fa-sliders', color: 'ic-amber' },
-        { key: '', to: `/p/${pid}`, label: '01 Protokolle', icon: 'fa-clipboard-list', color: 'ic-sky', count: d.protocols.length },
-        { key: 'plaene', to: `/p/${pid}/plaene`, label: '02 Pläne', icon: 'fa-map', color: 'ic-emerald', count: d.plans.length },
-        { key: 'maengel', to: `/p/${pid}/maengel`, label: '03 Mängel', icon: 'fa-triangle-exclamation', color: 'ic-rose', count: openDefects },
-        { key: 'kosten', to: `/p/${pid}/kosten`, label: '04 Kosten', icon: 'fa-coins', color: 'ic-amber2' },
-        { key: 'einstellungen', to: `/p/${pid}/einstellungen`, label: '05 Einstellungen', icon: 'fa-gear', color: 'ic-slate' },
+        { key: 'kontakte', to: `/p/${pid}/kontakte`, label: '01 Kontakte', icon: 'fa-address-book', color: 'ic-sky', count: project.participants.length },
+        { key: '', to: `/p/${pid}`, label: '02 Protokolle', icon: 'fa-clipboard-list', color: 'ic-sky', count: d.protocols.length },
+        { key: 'plaene', to: `/p/${pid}/plaene`, label: '03 Pläne', icon: 'fa-map', color: 'ic-emerald', count: d.plans.length },
+        { key: 'maengel', to: `/p/${pid}/maengel`, label: '04 Mängel', icon: 'fa-triangle-exclamation', color: 'ic-rose', count: openDefects },
+        { key: 'kosten', to: `/p/${pid}/kosten`, label: '05 Kosten', icon: 'fa-coins', color: 'ic-amber2' },
+        { key: 'einstellungen', to: `/p/${pid}/einstellungen`, label: '06 Einstellungen', icon: 'fa-gear', color: 'ic-slate' },
       ]
     : [
-        { key: '/', to: '/', label: 'Projekte', icon: 'fa-folder-open', color: 'ic-amber', count: projects.filter((p) => !p.archived).length },
         { key: '/kontakte', to: '/kontakte', label: 'Firmen & Kontakte', icon: 'fa-address-book', color: 'ic-sky' },
-        { key: '/import', to: '/import', label: 'Import aus Baumaster', icon: 'fa-file-import', color: 'ic-emerald' },
+        { key: '/import', to: '/import', label: 'Projektimport', icon: 'fa-file-import', color: 'ic-emerald' },
         { key: '/einstellungen', to: '/einstellungen', label: 'Einstellungen', icon: 'fa-gear', color: 'ic-slate' },
       ];
   const isActive = (t: Tab) => (project ? sub === t.key || (t.key === '' && sub === 'protokoll') : loc.pathname === t.key);
@@ -77,10 +77,6 @@ export function Header() {
         <div className="grow" />
         <div className="hdr-actions">
           <SyncBadge />
-          <Link className="hbtn" to="/kontakte" title="Firmen & Kontakte">
-            <i className="fa-solid fa-address-book" />
-            <span>Kontakte</span>
-          </Link>
           <a className="hbtn" href="/kosten/" title="Kostenverfolgung (alle Projekte)">
             <i className="fa-solid fa-coins" />
             <span>Kosten</span>
