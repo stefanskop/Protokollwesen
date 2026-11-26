@@ -9,6 +9,7 @@ import { syncRoutes, ensureSettings } from './sync';
 import { fileRoutes } from './files';
 import { mailRoutes } from './mail';
 import { kostenRoutes } from './kosten';
+import { companyRoutes } from './companies';
 
 
 ensureAdmin();
@@ -23,6 +24,7 @@ syncRoutes(app);
 fileRoutes(app);
 mailRoutes(app);
 kostenRoutes(app);
+companyRoutes(app);
 
 // Web-App ausliefern
 const here = path.dirname(fileURLToPath(import.meta.url));

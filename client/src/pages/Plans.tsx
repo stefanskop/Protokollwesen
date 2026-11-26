@@ -7,6 +7,7 @@ import { getBlob } from '../sync';
 import { useProjectData, useProjects, useGlobal, useSettings, addFile, blobToDataUrl } from '../data';
 import { Modal, DateInput } from '../components/ui';
 import { PlanViewer, type ViewerMarker } from '../components/PlanViewer';
+import { ProjectTabs } from '../components/ProjectTabs';
 import { rememberProject, SyncBadge } from '../App';
 import { fmtDate, todayIso, contactName, type Plan, type Project, type PlanVersion } from '../../../shared/src/index';
 
@@ -115,9 +116,7 @@ export function PlansPage() {
             </option>
           ))}
         </select>
-        <Link className="btn" to={`/p/${project.id}`}>
-          Protokolle
-        </Link>
+        <ProjectTabs project={project} active="plaene" />
         <input placeholder="Pläne suchen…" value={q} onChange={(e) => setQ(e.target.value)} style={{ maxWidth: 280 }} />
         <label className="toggle">
           <input type="checkbox" checked={onlyActive} onChange={(e) => setOnlyActive(e.target.checked)} /> nur aktive

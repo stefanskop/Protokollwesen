@@ -197,6 +197,8 @@
     hookApp();
     KS.renderPill();
     if (START.isOpen) START.render();
+    KS.deepLink();
+    KS.firms.init();
     setInterval(() => KS.sync(), POLL_MS);
     window.addEventListener('online', () => KS.sync());
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') KS.sync(); });
@@ -229,68 +231,12 @@
         d.innerHTML = KS.user
           ? `Angemeldet als <b>${h(KS.user.name)}</b> · Projekte werden automatisch auf dem Server (NAS) gespeichert und auf allen Geräten abgeglichen.`
           : 'Nicht angemeldet – Projekte liegen nur in diesem Browser.';
+        d.innerHTML += ' &nbsp;<a href="/" style="font-weight:600">← zum Protokollwesen</a>';
         box.appendChild(d);
-        if (KS.user) { box.appendChild(PW.section()); PW.load(); }
       }
     };
   }
 
-  /* ---------------- Startseite: Protokollwesen ---------------- */
-  const LS_PW = 'KVT_PW_OVERVIEW';
-  const PW = {
-    q: '', arch: false, items: null, err: '',
-    cached() { try { return JSON.parse(ls.get(LS_PW) || 'null'); } catch (e) { return null; } },
-    section() {
-      if (!PW.items) PW.items = PW.cached();
-      const el = document.createElement('div');
-      el.className = 'ks-pw';
-      el.innerHTML = `
-      <div class="st-head" style="margin:34px 0 22px"><div class="st-logo">${UI.logo('h-12')}</div><div><div class="st-t">Protokollwesen</div><div class="st-s">Besprechungsprotokolle, offene Punkte, Pläne und Baudokumentation</div></div></div>
-      <div class="st-grid">
-        <div class="st-card"><div class="st-h">${ico('bolt')} Schnellzugriff</div>
-          <div class="ks-quick">
-            <a class="st-u" href="/?neu=1">${ico('folder-plus')} <span>Neues Projekt anlegen</span></a>
-            <a class="st-u" href="/import">${ico('file-import')} <span>Import aus Baumaster</span></a>
-            <a class="st-u" href="/kontakte">${ico('address-book')} <span>Firmen &amp; Kontakte</span></a>
-            <a class="st-u" href="/einstellungen">${ico('gear')} <span>Einstellungen &amp; Benutzer</span></a>
-          </div></div>
-        <div class="st-card"><div class="st-h">${ico('folder-open')} Projekt wählen <span class="st-who">angemeldet: <b>${h(KS.user.name)}</b></span></div>
-          <div class="toolbar" style="margin-bottom:8px"><span class="st-q">${ico('magnifying-glass')}<input type="text" id="pw-q" value="${h(PW.q)}" placeholder="Projekt suchen (Nr., Name, Adresse, Auftraggeber) …"></span>
-            <label class="small nowrap" style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="pw-arch" ${PW.arch ? 'checked' : ''}> Archivierte</label><span class="small muted nowrap" id="pw-cnt"></span></div>
-          <div class="tw free st-list"><table class="t"><thead><tr><th>Nr.</th><th>Projekt</th><th>Auftraggeber</th><th class="n">Protokolle</th><th class="n">Offene Punkte</th><th>zuletzt geändert</th><th></th></tr></thead><tbody id="pw-tb">${PW.rows()}</tbody></table></div>
-          <div class="toolbar" style="margin-top:12px"><a class="btn pri" href="/?neu=1">${ico('folder-plus')} Neues Projekt</a><a class="btn" href="/">${ico('list')} Alle Projekte im Protokollwesen</a></div>
-        </div>
-      </div>`;
-      const q = el.querySelector('#pw-q');
-      q.addEventListener('input', () => { PW.q = q.value; PW.fill(); });
-      q.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const r = el.querySelector('#pw-tb tr[data-id]'); if (r) PW.open(r.dataset.id); } });
-      el.querySelector('#pw-arch').addEventListener('change', (e) => { PW.arch = e.target.checked; PW.fill(); });
-      el.addEventListener('click', (e) => { const r = e.target.closest('#pw-tb tr[data-id]'); if (r) PW.open(r.dataset.id); });
-      return el;
-    },
-    list() {
-      const q = PW.q.trim().toLowerCase();
-      return (PW.items || []).filter((p) => p.archived === PW.arch && (!q || `${p.number} ${p.name} ${p.address} ${p.clientName}`.toLowerCase().includes(q)))
-        .sort((a, b) => (b.changed || '').localeCompare(a.changed || ''));
-    },
-    rows() {
-      const list = PW.list();
-      setTimeout(() => { const c = document.getElementById('pw-cnt'); if (c) c.textContent = PW.items ? `${list.length} Projekte` : ''; }, 0);
-      if (!PW.items) return `<tr><td colspan="7" class="muted small" style="padding:14px">${PW.err ? h(PW.err) : 'Projekte werden geladen …'}</td></tr>`;
-      if (!list.length) return `<tr><td colspan="7" class="muted small" style="padding:14px">${PW.items.length ? 'Keine Treffer.' : 'Noch keine Projekte im Protokollwesen.'}</td></tr>`;
-      return list.map((p) => `<tr class="st-row" data-id="${h(p.id)}"><td class="b nowrap">${h(p.number)}</td><td>${h(p.name)}${p.address ? `<div class="small muted">${h(p.address)}</div>` : ''}</td><td>${h(p.clientName)}</td><td class="n">${p.protocols}</td><td class="n">${p.open ? `<span class="badge warn">${p.open}</span>` : '<span class="muted">0</span>'}</td><td class="small nowrap">${p.changed ? h(new Date(p.changed).toLocaleString('de-AT')) : ''}</td><td class="nowrap"><button class="btn sm pri">${ico('arrow-right')} Öffnen</button></td></tr>`).join('');
-    },
-    fill() { const tb = document.getElementById('pw-tb'); if (tb) tb.innerHTML = PW.rows(); },
-    open(id) { location.href = '/p/' + encodeURIComponent(id); },
-    async load() {
-      try {
-        const r = await api('/api/protokoll/overview', { timeout: 15000 });
-        PW.items = r.items; PW.err = ''; ls.set(LS_PW, JSON.stringify(r.items));
-      } catch (e) { if (!PW.items) PW.err = 'Projekte des Protokollwesens nicht verfügbar (offline?).'; }
-      PW.fill();
-    },
-  };
-  KS.PW = PW;
 
   KS.soon = function () {
     clearTimeout(KS._t);
@@ -683,7 +629,7 @@
   .ks-quick a.st-u{text-decoration:none}
   .ks-quick a.st-u i{color:#003360;width:18px;text-align:center}
   .ks-pw a.btn{text-decoration:none;display:inline-flex;align-items:center;gap:6px}
-  @media print{#ks-pill{display:none}}
+  @media print{#ks-pill,#ks-back{display:none}}
   `;
   document.head.appendChild(css);
 
@@ -708,6 +654,20 @@
     }
     el.className = cls;
     el.innerHTML = `<i></i><span>${h(txt)}</span>`;
+    KS.renderBack();
+  };
+
+  /** Knopf zurück zum verknüpften Projekt im Protokollwesen */
+  KS.renderBack = function () {
+    let b = document.getElementById('ks-back');
+    const pid = P && P.meta && P.meta.pwProjectId;
+    if (!b) {
+      b = document.createElement('a'); b.id = 'ks-back';
+      b.style.cssText = 'position:fixed;left:14px;bottom:62px;z-index:9998;background:#002e5e;color:#fff;padding:8px 14px;border-radius:20px;font:600 13px system-ui,sans-serif;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.25)';
+      document.body.appendChild(b);
+    }
+    b.href = pid ? '/p/' + encodeURIComponent(pid) : '/';
+    b.textContent = pid ? '← Protokolle, Pläne & Mängel dieses Projekts' : '← Protokollwesen';
   };
 
   function modal(title, body, btns, wide) {
@@ -741,7 +701,7 @@
     }
     const m = modal('Server-Abgleich (NAS)', body, [
       { t: 'Jetzt abgleichen', cls: 'pri', fn: () => { closeModal(); KS.sync(); } },
-      { t: '← Zum Protokollwesen', fn: () => { location.href = '/'; } },
+      { t: '← Zum Protokollwesen', fn: () => { location.href = P && P.meta && P.meta.pwProjectId ? '/p/' + encodeURIComponent(P.meta.pwProjectId) : '/'; } },
       { t: 'Abmelden', fn: () => KS.logout() },
       { t: 'Schließen', fn: closeModal },
     ], true);
@@ -787,5 +747,104 @@
         say('Früherer Stand als Kopie geöffnet (nur in diesem Browser). Bei Bedarf über den Server-Abgleich hochladen.', 7000);
       } catch (e) { say('Laden fehlgeschlagen: ' + e.message, 5000); }
     }));
+  };
+
+  /* ---------------- Aufruf aus dem Protokollwesen: /kosten/?pw=<Projekt>&nr=…&name=… ---------------- */
+  KS.deepLink = function () {
+    const q = new URLSearchParams(location.search);
+    const pw = q.get('pw');
+    if (!pw) return;
+    history.replaceState(null, '', '/kosten/');
+    const nr = (q.get('nr') || '').trim();
+    const all = Object.values(STORE.projects);
+    let p = all.find((x) => x.meta && x.meta.pwProjectId === pw) || (nr ? all.find((x) => x.meta && !x.meta.pwProjectId && String(x.meta.projNr || '').trim() === nr) : null);
+    if (!p) {
+      const name = q.get('name') || 'Projekt';
+      if (!confirm(`Für „${(nr ? nr + ' ' : '') + name}“ gibt es noch keine Kostenverfolgung.\n\nJetzt anlegen (Gliederung nach ÖNORM B 1801-1)?`)) { location.href = '/p/' + encodeURIComponent(pw); return; }
+      p = emptyProject();
+      Object.assign(p.meta, { projNr: nr, projekt: name, ag: q.get('ag') || '', agAdresse: q.get('agAdr') || '', bauort: q.get('ort') || '', stichtag: todayISO() });
+      if (STORE.user) p.meta.bearbeiter = STORE.user;
+      p.ps = [{ code: '01', name: 'Gesamtprojekt' }];
+      addStandardKB(p, '01');
+      p.meta.pwProjectId = pw;
+      PRJ.add(p, true);
+      STORE.dirty[p.id] = 1;
+    } else if (p.meta.pwProjectId !== pw) {
+      p.meta.pwProjectId = pw;
+      STORE.dirty[p.id] = (STORE.dirty[p.id] || 0) + 1;
+    }
+    if (START.isOpen) START.close();
+    PRJ.open(p.id);
+    KS.renderBack();
+    KS.soon();
+  };
+
+  /* ---------------- Gemeinsame Firmen & Kontakte ---------------- */
+  const LS_FIRMS = 'KVT_FIRMS';
+  const nrm = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  KS.firms = {
+    list: [],
+    sent: {},
+    async load() {
+      try { const r = await api('/api/companies', { timeout: 15000 }); KS.firms.list = r.items || []; ls.set(LS_FIRMS, JSON.stringify(KS.firms.list)); } catch (e) { /* offline: Zwischenspeicher */ }
+    },
+    find(name) { return KS.firms.list.find((f) => nrm(f.name) === nrm(name)); },
+    init() {
+      try { KS.firms.list = JSON.parse(ls.get(LS_FIRMS) || '[]'); } catch (e) { KS.firms.list = []; }
+      KS.firms.load();
+      // Auftrags-Dialog: Firmen aus „Firmen & Kontakte“ vorschlagen und Adresse/UID übernehmen
+      new MutationObserver(() => {
+        const inp = document.getElementById('f_firma');
+        if (!inp || inp.dataset.ks) return;
+        inp.dataset.ks = '1';
+        const dl = document.getElementById('firmenliste');
+        if (dl) {
+          const have = new Set(Array.from(dl.options).map((o) => nrm(o.value)));
+          KS.firms.list.forEach((f) => { if (!have.has(nrm(f.name))) { const o = document.createElement('option'); o.value = f.name; dl.appendChild(o); } });
+        }
+        const fill = () => {
+          const f = KS.firms.find(inp.value);
+          if (!f) return;
+          const adr = document.getElementById('f_adresse');
+          if (adr && !adr.value.trim() && f.address) adr.value = f.address.replace(/,\s*(?=\d{4}\s)/, '\n');
+          const u = document.getElementById('f_uid');
+          if (u && !u.value.trim() && f.uid) u.value = f.uid;
+        };
+        inp.addEventListener('change', fill);
+        inp.addEventListener('blur', fill);
+      }).observe(document.body, { childList: true, subtree: true });
+    },
+    /** neue Auftragnehmer der Kostenverfolgung in „Firmen & Kontakte“ übernehmen */
+    async push() {
+      const items = [];
+      const seen = new Set();
+      Object.values(STORE.projects)
+        // Beispiel- und rein lokale Projekte nicht übernehmen
+        .filter((p) => !KS.st.localOnly[p.id] && !/^\s*BEISPIEL/i.test((p.meta && p.meta.projekt) || ''))
+        .forEach((p) => (p.auftraege || []).forEach((a) => {
+        const name = String(a.firma || '').trim();
+        if (!name || seen.has(nrm(name))) return;
+        seen.add(nrm(name));
+        const adresse = String(a.adresse || '').replace(/\s*\n\s*/g, ', ').trim();
+        const key = nrm(name) + '|' + adresse + '|' + (a.uid || '');
+        if (KS.firms.sent[key]) return;
+        const f = KS.firms.find(name);
+        if (f && (f.address || !adresse) && (f.uid || !a.uid)) return;
+        items.push({ name, address: adresse, uid: a.uid || '', key });
+      }));
+      if (!items.length) return;
+      try {
+        await api('/api/companies/ensure', { method: 'POST', body: { items: items.map(({ key, ...x }) => x) } });
+        items.forEach((x) => { KS.firms.sent[x.key] = 1; });
+        KS.firms.load();
+      } catch (e) { /* später erneut */ }
+    },
+  };
+  // nach jedem Abgleich neue Auftragnehmer an „Firmen & Kontakte“ melden
+  const syncOrig = KS.sync;
+  KS.sync = async function () {
+    const r = await syncOrig.apply(this, arguments);
+    if (KS.status === 'ok') KS.firms.push();
+    return r;
   };
 })();

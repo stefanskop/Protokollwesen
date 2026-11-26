@@ -8,6 +8,7 @@ import { LazyInput, RichEditor, RichView, ContactSelect, ListSelect, DateInput, 
 import { rememberProject, SyncBadge, useUser } from '../App';
 import { NewProtocol } from './Project';
 import { SketchEditor } from '../components/Sketch';
+import { ProjectTabs } from '../components/ProjectTabs';
 import { PlanViewer } from '../components/PlanViewer';
 import { AttendeesTab, HeadTab, NextMeetingTab, SendDialog, AdoptDialog } from './Protocol';
 import {
@@ -173,15 +174,7 @@ export function Workspace() {
               </option>
             ))}
         </select>
-        <Link className="btn" to={`/p/${project.id}/projekt`} title="Beteiligte, offene Punkte, Projektdaten">
-          Projekt
-        </Link>
-        <Link className="btn" to={`/p/${project.id}/plaene`} title="Planverwaltung">
-          Pläne
-        </Link>
-        <Link className="btn" to={`/p/${project.id}/maengel`} title="Mängelmanagement">
-          Mängel
-        </Link>
+        <ProjectTabs project={project} active="protokolle" />
         <label className="toggle">
           <input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} /> Abgeschlossene
         </label>

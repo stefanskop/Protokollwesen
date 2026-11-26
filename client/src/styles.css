@@ -330,3 +330,10 @@ label.f .date-input { margin-top: 3px; }
 .dr-side .overdue { color: var(--red); font-weight: 600; }
 .dr-actions { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 .defect-box { border: 1px solid #f0d9a8; background: #fffaf0; border-radius: 6px; padding: 10px 12px; margin: 10px 0; }
+
+/* Reiter im Projekt */
+.ptabs { display: inline-flex; gap: 2px; background: #eef1f5; border-radius: 8px; padding: 3px; flex-wrap: wrap; }
+.ptab { padding: 6px 14px; border-radius: 6px; color: var(--muted); font-size: 0.92rem; white-space: nowrap; }
+.ptab:hover { background: #fff; color: var(--text); }
+.ptab.on { background: #fff; color: var(--brand); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.main:not(.main-ws) > .ptabs { margin-bottom: 12px; }

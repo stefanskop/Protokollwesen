@@ -6,6 +6,7 @@ import { useProjectData, useGlobal, useSettings, addFile, useFileUrl } from '../
 import { Modal, LazyInput, StringListEditor, DateInput } from '../components/ui';
 import { SyncBadge, useUser } from '../App';
 import { ContactPicker } from './Contacts';
+import { ProjectTabs } from '../components/ProjectTabs';
 import {
   fmtDate,
   todayIso,
@@ -30,9 +31,7 @@ export function ProjectPage() {
   const p = d.project;
   return (
     <>
-      <div className="crumbs">
-        <Link to="/">Projekte</Link> / <Link to={'/p/' + p.id}>Protokolle</Link> /
-      </div>
+      <ProjectTabs project={p} active="projekt" />
       <div className="topbar">
         <h1>
           {p.number && <span className="muted">{p.number} · </span>}

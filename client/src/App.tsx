@@ -80,7 +80,7 @@ export function App() {
       <BrowserRouter>
         <div className="app">
           <nav className="side">
-            <a className="logo" href="/kosten/" title="Startseite (Kostenverfolgung & Protokollwesen)">
+            <a className="logo" href="/" title="Projekte">
               <img src="/logo.png" alt="Skop Bauconsulting" />
             </a>
             <NavLink to="/" end>

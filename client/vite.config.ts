@@ -51,7 +51,15 @@ export default defineConfig({
       registerType: 'autoUpdate',
       workbox: {
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//],
+        // Die Kostenverfolgung (/kosten/) ist eine eigene Seite und darf nicht durch die App ersetzt werden
+        navigateFallbackDenylist: [/^\/api\//, /^\/kosten/],
+        runtimeCaching: [
+          {
+            urlPattern: ({ request, url }) => request.mode === 'navigate' && url.pathname.startsWith('/kosten'),
+            handler: 'NetworkFirst',
+            options: { cacheName: 'kosten-seite', networkTimeoutSeconds: 4 },
+          },
+        ],
         globPatterns: ['**/*.{js,css,html,png,svg,woff2}'],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
       },

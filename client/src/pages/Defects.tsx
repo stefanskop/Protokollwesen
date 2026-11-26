@@ -8,6 +8,7 @@ import { generateDefectPdf } from '../defectpdf';
 import { Modal, DateInput } from '../components/ui';
 import { PlanViewer, type ViewerMarker } from '../components/PlanViewer';
 import { rememberProject, SyncBadge, useUser } from '../App';
+import { ProjectTabs } from '../components/ProjectTabs';
 import { ItemDetail, statusPatch } from './Workspace';
 import {
   fmtDate,
@@ -192,12 +193,7 @@ export function DefectsPage() {
             </option>
           ))}
         </select>
-        <Link className="btn" to={`/p/${project.id}`}>
-          Protokolle
-        </Link>
-        <Link className="btn" to={`/p/${project.id}/plaene`}>
-          Pläne
-        </Link>
+        <ProjectTabs project={project} active="maengel" />
         <div className="grow" />
         {busy && <span className="badge orange">{busy}</span>}
         <button className="btn" onClick={() => setChoosePlan(true)} disabled={!d.plans.length} title="Mängel im Plan anzeigen">

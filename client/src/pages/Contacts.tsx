@@ -36,7 +36,7 @@ export function ContactsPage() {
             <div className="row" style={{ alignItems: 'center' }}>
               <div>
                 <b>{co ? co.name : 'Ohne Firma'}</b>
-                {co && <div className="muted small">{[co.address, co.phone, co.email].filter(Boolean).join(' · ')}</div>}
+                {co && <div className="muted small">{[co.address, co.uid && 'UID ' + co.uid, co.phone, co.email].filter(Boolean).join(' · ')}</div>}
               </div>
               {co && (
                 <div style={{ flex: '0 0 auto', display: 'flex', gap: 6 }}>
@@ -76,8 +76,8 @@ export function ContactsPage() {
 }
 
 export function CompanyForm({ value, onClose, onSaved }: { value: Partial<Company>; onClose: () => void; onSaved?: (id: string) => void }) {
-  const [c, setC] = useState({ name: '', address: '', phone: '', email: '', ...value });
-  const f = (k: 'name' | 'address' | 'phone' | 'email') => ({ value: c[k] || '', onChange: (e: any) => setC({ ...c, [k]: e.target.value }) });
+  const [c, setC] = useState({ name: '', address: '', phone: '', email: '', uid: '', ...value });
+  const f = (k: 'name' | 'address' | 'phone' | 'email' | 'uid') => ({ value: c[k] || '', onChange: (e: any) => setC({ ...c, [k]: e.target.value }) });
   return (
     <Modal
       title={value.id ? 'Firma bearbeiten' : 'Neue Firma'}
@@ -97,7 +97,7 @@ export function CompanyForm({ value, onClose, onSaved }: { value: Partial<Compan
             className="btn primary"
             disabled={!c.name}
             onClick={async () => {
-              const id = await save<Company>('company', value.id || null, { name: c.name, address: c.address, phone: c.phone, email: c.email });
+              const id = await save<Company>('company', value.id || null, { name: c.name, address: c.address, phone: c.phone, email: c.email, uid: c.uid });
               onSaved?.(id);
               onClose();
             }}
@@ -111,10 +111,16 @@ export function CompanyForm({ value, onClose, onSaved }: { value: Partial<Compan
         Firmenname *
         <input {...f('name')} autoFocus />
       </label>
-      <label className="f">
-        Adresse
-        <input {...f('address')} />
-      </label>
+      <div className="grid2">
+        <label className="f">
+          Adresse
+          <input {...f('address')} />
+        </label>
+        <label className="f">
+          UID-Nr.
+          <input {...f('uid')} placeholder="ATU…" />
+        </label>
+      </div>
       <div className="grid2">
         <label className="f">
           Telefon
