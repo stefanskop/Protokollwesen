@@ -115,17 +115,11 @@ Zusätzlich legt das Programm täglich eine Kopie der Datenbank unter `data/back
 
 Neue Versionen erscheinen automatisch auf GitHub. Zum Einspielen:
 
-1. **Container Manager → Projekt → protokollwesen → Aktion → Stoppen**
-2. **Aktion → Erstellen**. Durch `pull_policy: always` wird dabei die neueste Version geladen (im Protokollfenster erscheint „Pulling … Pulled“).
-3. Im Browser die Seite neu laden. Die Version steht unter `http://<IP-der-NAS>:8080/api/health`.
+1. **Container Manager → Projekt → protokollwesen → Aktion → Bereinigen** (entfernt nur den Container, die Daten im Ordner `data` bleiben erhalten). „Stopp“ genügt nicht, weil der Container sonst gleich wieder startet.
+2. **Aktion → Erstellen**: Durch `pull_policy: always` wird dabei die neueste Version geladen (im Protokollfenster erscheint „Pulling … Pulled“).
+3. Im Browser die Seite neu laden (Mac: Cmd+Shift+R, PC: Strg+F5). Die Version steht unter `http://<IP-der-NAS>:8080/api/health`.
 
-Ihre Daten bleiben dabei erhalten. Datenbank-Umstellungen laufen beim Start automatisch.
-
-## Kostenverfolgung
-
-Die Kostenverfolgung ist im selben Programm enthalten. Nach dem Update ist sie unter `http://<IP-der-NAS>:8080/kosten/` bzw. `https://<Ihre-Adresse>/kosten/` erreichbar, oder per Klick auf das Logo links oben im Protokollwesen. Diese Seite ist die gemeinsame Startseite: oben die Kostenverfolgung, darunter das Protokollwesen. Es sind keine weiteren Einstellungen auf der NAS nötig. Ihre Daten liegen im selben `data`-Ordner und sind damit in Hyper Backup und der täglichen Sicherung enthalten.
-
-Am iPad: `https://<Ihre-Adresse>/kosten/` in Safari öffnen → Teilen → **Zum Home-Bildschirm**.
+Datenbank-Umstellungen laufen beim Start automatisch.
 
 ## Hilfe bei Problemen
 
