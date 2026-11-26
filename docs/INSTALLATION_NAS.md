@@ -53,7 +53,9 @@ services:
 
 Der Container Manager lädt das Programm und startet es. Unter **Container** muss „protokollwesen“ danach grün laufen.
 
-> `./data` bedeutet: Ordner `data` im Projektordner `/docker/protokollwesen`. Das funktioniert unabhängig davon, auf welchem Volume der Ordner liegt. Nach dem ersten Start liegt dort die Datei `protokollwesen.db`.
+> `./data` bedeutet: Ordner `data` **im gewählten Projektordner**. Die NAS legt ihn nicht selbst an: Er muss vor dem Start existieren und klein geschrieben sein. Beispiel: Projektordner `/docker/Protokollwesen/Data` → Ordner `/docker/Protokollwesen/Data/data` anlegen. Nach dem ersten Start liegt dort die Datei `protokollwesen.db`.
+>
+> Fehlermeldung „Bind mount failed … does not exist“: Den in der Meldung genannten Ordner in File Station anlegen und das Projekt erneut starten.
 
 ## Schritt 4 – Erster Test im Büro
 
