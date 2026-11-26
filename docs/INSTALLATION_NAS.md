@@ -39,7 +39,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - /volume1/docker/protokollwesen/data:/data
+      - ./data:/data
     environment:
       - TZ=Europe/Vienna
       - ADMIN_EMAIL=office@skop-bauconsulting.at
@@ -53,7 +53,7 @@ services:
 
 Der Container Manager lädt das Programm und startet es. Unter **Container** muss „protokollwesen“ danach grün laufen.
 
-> Liegt Ihr freigegebener Ordner `docker` nicht auf `volume1`, den Pfad in der Zeile `volumes` anpassen. Der Pfad steht in File Station unter Rechtsklick → Eigenschaften.
+> `./data` bedeutet: Ordner `data` im Projektordner `/docker/protokollwesen`. Das funktioniert unabhängig davon, auf welchem Volume der Ordner liegt. Nach dem ersten Start liegt dort die Datei `protokollwesen.db`.
 
 ## Schritt 4 – Erster Test im Büro
 

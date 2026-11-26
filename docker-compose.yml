@@ -9,7 +9,7 @@ services:
       - "8080:8080"
     volumes:
       # Datenbank, Fotos und tägliche Sicherungen – in Hyper Backup aufnehmen!
-      - /volume1/docker/protokollwesen/data:/data
+      - ./data:/data
     environment:
       - TZ=Europe/Vienna
       # Erster Administrator – nur beim allerersten Start verwendet.
