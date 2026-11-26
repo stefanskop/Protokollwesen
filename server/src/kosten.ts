@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { db, FILES_DIR } from './db';
 import { authenticate, type AuthUser } from './auth';
+import { accessibleProjects } from './sync';
 
 const KEEP_VERSIONS = 5;
 const SAFE_ID = /^[a-zA-Z0-9_-]{4,80}$/;
@@ -117,6 +118,26 @@ export function kostenRoutes(app: FastifyInstance) {
     r.addContentTypeParser('application/octet-stream', { parseAs: 'buffer', bodyLimit: 60 * 1024 * 1024 }, (_req, body, done) =>
       done(null, body),
     );
+
+    /** Startseite: Übersicht der Protokollwesen-Projekte (Anzahl Protokolle, offene Punkte, letzte Änderung) */
+    r.get('/api/protokoll/overview', async (req) => {
+      const ids = accessibleProjects(req.user!);
+      const rows = db.prepare(`SELECT id, type, project_id, data, updated_at FROM records WHERE deleted=0 AND type IN ('project','protocol','item')`).all() as any[];
+      const map = new Map<string, any>();
+      for (const r0 of rows) {
+        if (r0.type !== 'project' || !ids.has(r0.id)) continue;
+        const d = JSON.parse(r0.data);
+        map.set(r0.id, { id: r0.id, number: d.number || '', name: d.name || '', address: d.address || '', clientName: d.clientName || '', archived: !!d.archived, protocols: 0, open: 0, changed: r0.updated_at });
+      }
+      for (const r0 of rows) {
+        const p = r0.project_id && map.get(r0.project_id);
+        if (!p) continue;
+        if (r0.updated_at > p.changed) p.changed = r0.updated_at;
+        if (r0.type === 'protocol') p.protocols++;
+        else if (r0.type === 'item' && JSON.parse(r0.data).status === 'offen') p.open++;
+      }
+      return { items: [...map.values()] };
+    });
 
     /** Übersicht: welche Projekte gibt es in welchem Stand */
     r.get('/api/kosten/list', async (req) => {

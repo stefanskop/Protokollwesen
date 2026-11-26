@@ -36,7 +36,7 @@ Den gesamten Ordner bitte zusätzlich in **Hyper Backup** aufnehmen.
 
 ## Kostenverfolgung Hochbau (`/kosten/`)
 
-Die Kostenverfolgung (ÖNORM B 1801-1: Budget, Aufträge, Nachträge, Rechnungen, Rechnungsprüfung) läuft im selben Container unter **`https://<Adresse>/kosten/`**. In der Seitenleiste des Protokollwesens führt der Eintrag **Kostenverfolgung** dorthin.
+Die Kostenverfolgung (ÖNORM B 1801-1: Budget, Aufträge, Nachträge, Rechnungen, Rechnungsprüfung) läuft im selben Container unter **`https://<Adresse>/kosten/`**. Diese Seite ist die gemeinsame **Startseite**: oben die Kostenverfolgung, darunter im gleichen Aufbau das Protokollwesen (Schnellzugriff und Projektliste mit Protokollen und offenen Punkten). Im Protokollwesen führt ein Klick auf das Logo links oben zurück zur Startseite.
 
 - **Gleiche Anmeldung** wie im Protokollwesen. Wer dort im selben Browser angemeldet ist, muss sich nicht erneut anmelden.
 - **Projekte liegen auf der NAS** (Tabelle `kosten` in `protokollwesen.db`, Originalrechnungen unter `data/files/kosten/`). Jede Änderung wird nach wenigen Sekunden übertragen. Andere Geräte übernehmen sie beim nächsten Abgleich (alle 30 s, beim Wechsel ins Fenster oder über die Statusanzeige links unten).

@@ -10,7 +10,12 @@ export function ProjectsPage() {
   const { projects, loaded } = useProjects();
   const [showArchived, setShowArchived] = useState(false);
   const [q, setQ] = useState('');
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState(() => {
+    // Aufruf von der Startseite: /?neu=1 öffnet direkt „Neues Projekt“
+    const neu = new URLSearchParams(window.location.search).has('neu');
+    if (neu) window.history.replaceState(null, '', '/');
+    return neu;
+  });
   const nav = useNavigate();
   const list = projects.filter((p) => p.archived === showArchived && (!q || `${p.number} ${p.name} ${p.address}`.toLowerCase().includes(q.toLowerCase())));
   return (

@@ -57,17 +57,13 @@ export function App() {
       <BrowserRouter>
         <div className="app">
           <nav className="side">
-            <div className="logo">
+            <a className="logo" href="/kosten/" title="Startseite (Kostenverfolgung & Protokollwesen)">
               <img src="/logo.png" alt="Skop Bauconsulting" />
-            </div>
+            </a>
             <NavLink to="/" end>
               <span className="ico">▦</span>
               <span className="label">Projekte</span>
             </NavLink>
-            <a href="/kosten/" title="Kostenverfolgung Hochbau (ÖNORM B 1801-1)">
-              <span className="ico">€</span>
-              <span className="label">Kostenverfolgung</span>
-            </a>
             <NavLink to="/kontakte">
               <span className="ico">☎</span>
               <span className="label">Firmen & Kontakte</span>

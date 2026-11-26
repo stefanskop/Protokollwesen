@@ -218,7 +218,7 @@
     window.persist = function () { const r = origPersist.apply(this, arguments); KS.soon(); return r; };
     const origDemo = PRJ.demo;
     PRJ.demo = function () { const r = origDemo.apply(PRJ, arguments); if (P) { KS.st.localOnly[P.id] = 1; KS.saveState(); KS.renderPill(); } return r; };
-    // Startseite: Hinweis auf Server-Ablage
+    // Startseite: Hinweis auf Server-Ablage + Bereich Protokollwesen im gleichen Aufbau
     const origRender = START.render;
     START.render = function () {
       origRender.apply(START, arguments);
@@ -227,12 +227,70 @@
         const d = document.createElement('div');
         d.className = 'ks-note';
         d.innerHTML = KS.user
-          ? `Angemeldet als <b>${h(KS.user.name)}</b> · Projekte werden automatisch auf dem Server (NAS) gespeichert und auf allen Geräten abgeglichen. <a href="/">← zum Protokollwesen</a>`
+          ? `Angemeldet als <b>${h(KS.user.name)}</b> · Projekte werden automatisch auf dem Server (NAS) gespeichert und auf allen Geräten abgeglichen.`
           : 'Nicht angemeldet – Projekte liegen nur in diesem Browser.';
         box.appendChild(d);
+        if (KS.user) { box.appendChild(PW.section()); PW.load(); }
       }
     };
   }
+
+  /* ---------------- Startseite: Protokollwesen ---------------- */
+  const LS_PW = 'KVT_PW_OVERVIEW';
+  const PW = {
+    q: '', arch: false, items: null, err: '',
+    cached() { try { return JSON.parse(ls.get(LS_PW) || 'null'); } catch (e) { return null; } },
+    section() {
+      if (!PW.items) PW.items = PW.cached();
+      const el = document.createElement('div');
+      el.className = 'ks-pw';
+      el.innerHTML = `
+      <div class="st-head" style="margin:34px 0 22px"><div class="st-logo">${UI.logo('h-12')}</div><div><div class="st-t">Protokollwesen</div><div class="st-s">Besprechungsprotokolle, offene Punkte, Pläne und Baudokumentation</div></div></div>
+      <div class="st-grid">
+        <div class="st-card"><div class="st-h">${ico('bolt')} Schnellzugriff</div>
+          <div class="ks-quick">
+            <a class="st-u" href="/?neu=1">${ico('folder-plus')} <span>Neues Projekt anlegen</span></a>
+            <a class="st-u" href="/import">${ico('file-import')} <span>Import aus Baumaster</span></a>
+            <a class="st-u" href="/kontakte">${ico('address-book')} <span>Firmen &amp; Kontakte</span></a>
+            <a class="st-u" href="/einstellungen">${ico('gear')} <span>Einstellungen &amp; Benutzer</span></a>
+          </div></div>
+        <div class="st-card"><div class="st-h">${ico('folder-open')} Projekt wählen <span class="st-who">angemeldet: <b>${h(KS.user.name)}</b></span></div>
+          <div class="toolbar" style="margin-bottom:8px"><span class="st-q">${ico('magnifying-glass')}<input type="text" id="pw-q" value="${h(PW.q)}" placeholder="Projekt suchen (Nr., Name, Adresse, Auftraggeber) …"></span>
+            <label class="small nowrap" style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="pw-arch" ${PW.arch ? 'checked' : ''}> Archivierte</label><span class="small muted nowrap" id="pw-cnt"></span></div>
+          <div class="tw free st-list"><table class="t"><thead><tr><th>Nr.</th><th>Projekt</th><th>Auftraggeber</th><th class="n">Protokolle</th><th class="n">Offene Punkte</th><th>zuletzt geändert</th><th></th></tr></thead><tbody id="pw-tb">${PW.rows()}</tbody></table></div>
+          <div class="toolbar" style="margin-top:12px"><a class="btn pri" href="/?neu=1">${ico('folder-plus')} Neues Projekt</a><a class="btn" href="/">${ico('list')} Alle Projekte im Protokollwesen</a></div>
+        </div>
+      </div>`;
+      const q = el.querySelector('#pw-q');
+      q.addEventListener('input', () => { PW.q = q.value; PW.fill(); });
+      q.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const r = el.querySelector('#pw-tb tr[data-id]'); if (r) PW.open(r.dataset.id); } });
+      el.querySelector('#pw-arch').addEventListener('change', (e) => { PW.arch = e.target.checked; PW.fill(); });
+      el.addEventListener('click', (e) => { const r = e.target.closest('#pw-tb tr[data-id]'); if (r) PW.open(r.dataset.id); });
+      return el;
+    },
+    list() {
+      const q = PW.q.trim().toLowerCase();
+      return (PW.items || []).filter((p) => p.archived === PW.arch && (!q || `${p.number} ${p.name} ${p.address} ${p.clientName}`.toLowerCase().includes(q)))
+        .sort((a, b) => (b.changed || '').localeCompare(a.changed || ''));
+    },
+    rows() {
+      const list = PW.list();
+      setTimeout(() => { const c = document.getElementById('pw-cnt'); if (c) c.textContent = PW.items ? `${list.length} Projekte` : ''; }, 0);
+      if (!PW.items) return `<tr><td colspan="7" class="muted small" style="padding:14px">${PW.err ? h(PW.err) : 'Projekte werden geladen …'}</td></tr>`;
+      if (!list.length) return `<tr><td colspan="7" class="muted small" style="padding:14px">${PW.items.length ? 'Keine Treffer.' : 'Noch keine Projekte im Protokollwesen.'}</td></tr>`;
+      return list.map((p) => `<tr class="st-row" data-id="${h(p.id)}"><td class="b nowrap">${h(p.number)}</td><td>${h(p.name)}${p.address ? `<div class="small muted">${h(p.address)}</div>` : ''}</td><td>${h(p.clientName)}</td><td class="n">${p.protocols}</td><td class="n">${p.open ? `<span class="badge warn">${p.open}</span>` : '<span class="muted">0</span>'}</td><td class="small nowrap">${p.changed ? h(new Date(p.changed).toLocaleString('de-AT')) : ''}</td><td class="nowrap"><button class="btn sm pri">${ico('arrow-right')} Öffnen</button></td></tr>`).join('');
+    },
+    fill() { const tb = document.getElementById('pw-tb'); if (tb) tb.innerHTML = PW.rows(); },
+    open(id) { location.href = '/p/' + encodeURIComponent(id); },
+    async load() {
+      try {
+        const r = await api('/api/protokoll/overview', { timeout: 15000 });
+        PW.items = r.items; PW.err = ''; ls.set(LS_PW, JSON.stringify(r.items));
+      } catch (e) { if (!PW.items) PW.err = 'Projekte des Protokollwesens nicht verfügbar (offline?).'; }
+      PW.fill();
+    },
+  };
+  KS.PW = PW;
 
   KS.soon = function () {
     clearTimeout(KS._t);
@@ -621,6 +679,10 @@
   .ks-list label{flex-direction:row;align-items:center;gap:6px;color:#0f172a;font-size:12px}
   .ks-note{margin-top:12px;padding:8px 12px;border-radius:8px;background:#ecfdf5;border:1px solid #a7f3d0;font-size:12px;color:#065f46}
   .ks-note a{color:#002E5E;font-weight:600;margin-left:6px}
+  .ks-quick{display:flex;flex-direction:column;gap:6px}
+  .ks-quick a.st-u{text-decoration:none}
+  .ks-quick a.st-u i{color:#003360;width:18px;text-align:center}
+  .ks-pw a.btn{text-decoration:none;display:inline-flex;align-items:center;gap:6px}
   @media print{#ks-pill{display:none}}
   `;
   document.head.appendChild(css);
