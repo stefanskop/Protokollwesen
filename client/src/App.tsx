@@ -9,6 +9,7 @@ import { ProjectsPage } from './pages/Projects';
 import { ProjectPage } from './pages/Project';
 import { ProtocolPage } from './pages/Protocol';
 import { Workspace } from './pages/Workspace';
+import { ImportPage } from './pages/Import';
 import { ContactsPage } from './pages/Contacts';
 import { SettingsPage } from './pages/Settings';
 
@@ -81,6 +82,7 @@ export function App() {
               <Route path="/p/:pid/projekt" element={<ProjectPage />} />
               <Route path="/p/:pid/protokoll/:prid" element={<ProtocolPage />} />
               <Route path="/kontakte" element={<ContactsPage />} />
+              <Route path="/import" element={<ImportPage />} />
               <Route
                 path="/einstellungen"
                 element={

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { save, remove } from '../db';
 import { api } from '../api';
-import { useProjectData, useGlobal, useSettings, addFile, blobToDataUrl } from '../data';
+import { useProjectData, useGlobal, useSettings, addFile, blobToDataUrl, useFileUrl } from '../data';
 import { generateProtocolPdf } from '../pdfgen';
 import { Modal, LazyInput, LazyTextarea, DateInput } from '../components/ui';
 import { SyncBadge, useUser } from '../App';
@@ -205,6 +205,15 @@ export function HeadTab({ protocol, locked }: { protocol: Protocol; locked: bool
         Endtext
         <LazyTextarea disabled={locked} value={protocol.endText ?? settings.endText} onSave={(v) => set({ endText: v === settings.endText ? null : v })} />
       </label>
+      {(protocol.sourceFileId || !!protocol.sentFileIds?.length) && (
+        <div style={{ marginBottom: 10 }}>
+          <div className="f-label">Archiv</div>
+          {protocol.sourceFileId && <FileLink id={protocol.sourceFileId} label="Original-PDF (Import)" />}
+          {(protocol.sentFileIds || []).map((id, k) => (
+            <FileLink key={id} id={id} label={`Versendetes PDF ${k + 1}`} />
+          ))}
+        </div>
+      )}
       <label className="check">
         <input type="checkbox" disabled={locked} checked={protocol.mode === 'fortlaufend'} onChange={(e) => set({ mode: e.target.checked ? 'fortlaufend' : 'standard' })} />
         Fortlaufendes Protokoll (nach Abschluss gesperrt)
@@ -352,5 +361,14 @@ export function SendDialog({ d, protocol, typeName, onClose }: { d: D; protocol:
       )}
       <div className="muted small">Die Empfänger werden im BCC adressiert; eine Kopie geht an das Büro-Postfach. Das versendete PDF wird im Projekt archiviert.</div>
     </Modal>
+  );
+}
+
+function FileLink({ id, label }: { id: string; label: string }) {
+  const url = useFileUrl(id);
+  return (
+    <a className="btn small" style={{ marginRight: 6 }} href={url} target="_blank" rel="noreferrer">
+      📄 {label}
+    </a>
   );
 }

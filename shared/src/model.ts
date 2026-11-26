@@ -173,6 +173,8 @@ export interface Protocol extends BaseRecord {
   snapshot?: Record<string, Partial<Item>> | null;
   /** archivierte, versendete PDF-Dateien */
   sentFileIds?: string[];
+  /** Original-PDF bei importierten Protokollen (z.B. aus Baumaster) */
+  sourceFileId?: string | null;
 }
 
 export type ItemStatus = 'info' | 'offen' | 'erledigt';

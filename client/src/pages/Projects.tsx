@@ -19,6 +19,9 @@ export function ProjectsPage() {
         <h1>Projekte</h1>
         <div className="grow" />
         <SyncBadge />
+        <button className="btn" onClick={() => nav('/import')}>
+          Import aus Baumaster
+        </button>
         <button className="btn primary" onClick={() => setCreating(true)}>
           + Neues Projekt
         </button>
