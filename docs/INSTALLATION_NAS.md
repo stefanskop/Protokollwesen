@@ -113,13 +113,24 @@ Zusätzlich legt das Programm täglich eine Kopie der Datenbank unter `data/back
 
 ## Updates
 
-Neue Versionen erscheinen automatisch auf GitHub. Zum Einspielen:
+Neue Versionen erscheinen automatisch auf GitHub. Ihre Daten (Ordner `data`) bleiben bei jedem Weg erhalten; Datenbank-Umstellungen laufen beim Start automatisch.
 
-1. **Container Manager → Projekt → protokollwesen → Aktion → Bereinigen** (entfernt nur den Container, die Daten im Ordner `data` bleiben erhalten). „Stopp“ genügt nicht, weil der Container sonst gleich wieder startet.
-2. **Aktion → Erstellen**: Durch `pull_policy: always` wird dabei die neueste Version geladen (im Protokollfenster erscheint „Pulling … Pulled“).
-3. Im Browser die Seite neu laden (Mac: Cmd+Shift+R, PC: Strg+F5). Die Version steht unter `http://<IP-der-NAS>:8080/api/health`.
+### Empfohlen: Aufgabe im Aufgabenplaner (einmal einrichten)
+1. **Systemsteuerung → Aufgabenplaner → Erstellen → Geplante Aufgabe → Benutzerdefiniertes Script**
+2. Allgemein: Aufgabe `Protokollwesen aktualisieren`, Benutzer **root**, „Aktiviert“ nur setzen, wenn automatisch aktualisiert werden soll (Zeitplan z. B. täglich 3:00).
+3. Aufgabeneinstellungen → Script (Pfad = Projektordner im Container Manager):
+   ```bash
+   cd /volume1/docker/Protokollwesen/Data
+   docker-compose -p protokollwesen pull
+   docker-compose -p protokollwesen up -d
+   ```
+4. Zum Aktualisieren: Aufgabe markieren → **Ausführen**.
 
-Datenbank-Umstellungen laufen beim Start automatisch.
+### Alternativ im Container Manager
+- **Image** → `ghcr.io/stefanskop/protokollwesen` → bei „Aktualisierung verfügbar“ → **Aktualisieren**, oder
+- **Projekt → Aktion → Bereinigen**, danach **Aktion → Erstellen** (funktioniert nicht bei jeder DSM-Version).
+
+Danach im Browser neu laden (Mac: Cmd+Shift+R, PC: Strg+F5). Die Version steht unter `http://<IP-der-NAS>:8080/api/health`.
 
 ## Hilfe bei Problemen
 
