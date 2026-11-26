@@ -34,6 +34,7 @@ Ergebnis: `/docker/protokollwesen/data`
 services:
   protokollwesen:
     image: ghcr.io/stefanskop/protokollwesen:latest
+    pull_policy: always
     container_name: protokollwesen
     restart: unless-stopped
     ports:
@@ -113,8 +114,10 @@ Zusätzlich legt das Programm täglich eine Kopie der Datenbank unter `data/back
 ## Updates
 
 Neue Versionen erscheinen automatisch auf GitHub. Zum Einspielen:
-**Container Manager → Projekt → protokollwesen → Aktion → Bereinigen**, danach **Erstellen**.
-Alternativ: **Image** → bei „ghcr.io/stefanskop/protokollwesen“ erscheint „Update verfügbar“ → **Aktualisieren**.
+
+1. **Container Manager → Projekt → protokollwesen → Aktion → Stoppen**
+2. **Aktion → Erstellen**. Durch `pull_policy: always` wird dabei die neueste Version geladen (im Protokollfenster erscheint „Pulling … Pulled“).
+3. Im Browser die Seite neu laden. Die Version steht unter `http://<IP-der-NAS>:8080/api/health`.
 
 Ihre Daten bleiben dabei erhalten. Datenbank-Umstellungen laufen beim Start automatisch.
 

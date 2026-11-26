@@ -3,6 +3,7 @@
 services:
   protokollwesen:
     image: ghcr.io/stefanskop/protokollwesen:latest
+    pull_policy: always
     container_name: protokollwesen
     restart: unless-stopped
     ports:
