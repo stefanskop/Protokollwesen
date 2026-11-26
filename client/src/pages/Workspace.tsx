@@ -7,6 +7,7 @@ import { generateProtocolPdf } from '../pdfgen';
 import { LazyInput, RichEditor, RichView, ContactSelect, ListSelect, DateInput, Modal } from '../components/ui';
 import { SyncBadge, useUser } from '../App';
 import { NewProtocol } from './Project';
+import { SketchEditor } from '../components/Sketch';
 import { AttendeesTab, HeadTab, NextMeetingTab, SendDialog, AdoptDialog } from './Protocol';
 import {
   fmtDate,
@@ -613,6 +614,11 @@ function ItemDetail({ d, protocol, item: raw, locked, onBack, onRemoved }: { d: 
                 const fresh = await getRec<Entry>(entry.id);
                 await save<Entry>('entry', entry.id, { fileIds: (fresh?.fileIds || []).filter((x) => x !== fid) });
               }}
+              projectId={protocol.projectId}
+              onReplace={async (newId) => {
+                const fresh = await getRec<Entry>(entry.id);
+                await save<Entry>('entry', entry.id, { fileIds: (fresh?.fileIds || []).map((x) => (x === fid ? newId : x)) });
+              }}
             />
           ))}
         </div>
@@ -650,7 +656,8 @@ function EntryBlock({ d, entry, editable }: { d: D; entry: Entry; editable: bool
   );
 }
 
-function Attachment({ id, meta, editable, origin, onRemove }: { id: string; meta?: FileMeta; editable: boolean; origin?: string; onRemove: () => void }) {
+function Attachment({ id, meta, editable, origin, onRemove, onReplace, projectId }: { id: string; meta?: FileMeta; editable: boolean; origin?: string; onRemove: () => void; onReplace: (newId: string) => void; projectId: string }) {
+  const [sketch, setSketch] = useState(false);
   const { url, retry } = useFileUrlEx(id);
   const [big, setBig] = useState(false);
   const isImg = meta?.mime?.startsWith('image/');
@@ -674,12 +681,18 @@ function Attachment({ id, meta, editable, origin, onRemove }: { id: string; meta
       <div className="att-cap">
         {editable ? <LazyInput value={meta?.caption || ''} placeholder="Anmerkung" onSave={(v) => save<FileMeta>('file', id, { caption: v })} /> : <span className="small">{meta?.caption}</span>}
         {origin && <span className="badge">{origin}</span>}
+        {editable && isImg && (
+          <button className="btn small ghost" title="Zeichnen / markieren" onClick={() => setSketch(true)}>
+            ✎
+          </button>
+        )}
         {editable && (
           <button className="btn small ghost danger" title="Entfernen" onClick={onRemove}>
             ✕
           </button>
         )}
       </div>
+      {sketch && <SketchEditor fileId={id} projectId={projectId} onClose={() => setSketch(false)} onSaved={onReplace} />}
       {big && url && (
         <div className="lightbox" onClick={() => setBig(false)}>
           <img src={url} alt="" />
