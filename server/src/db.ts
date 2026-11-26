@@ -58,6 +58,29 @@ const MIGRATIONS: string[] = [
   CREATE TABLE mutations (mid TEXT PRIMARY KEY, applied_at TEXT NOT NULL);
   CREATE TABLE server_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
   `,
+  // 2: Kostenverfolgung Hochbau (ganze Projekte als JSON-Dokument, mit Versionsnummer)
+  `
+  CREATE TABLE kosten (
+    id TEXT PRIMARY KEY,
+    kind TEXT NOT NULL,
+    data TEXT NOT NULL,
+    rev INTEGER NOT NULL,
+    deleted INTEGER NOT NULL DEFAULT 0,
+    owner TEXT,
+    access TEXT NOT NULL DEFAULT '[]',
+    updated_at TEXT NOT NULL,
+    updated_by TEXT,
+    created_at TEXT NOT NULL
+  );
+  CREATE TABLE kosten_history (
+    id TEXT NOT NULL,
+    rev INTEGER NOT NULL,
+    data TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    updated_by TEXT,
+    PRIMARY KEY (id, rev)
+  );
+  `,
 ];
 
 export function migrate() {

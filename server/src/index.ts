@@ -8,6 +8,7 @@ import { authRoutes, ensureAdmin } from './auth';
 import { syncRoutes, ensureSettings } from './sync';
 import { fileRoutes } from './files';
 import { mailRoutes } from './mail';
+import { kostenRoutes } from './kosten';
 
 
 ensureAdmin();
@@ -21,6 +22,7 @@ authRoutes(app);
 syncRoutes(app);
 fileRoutes(app);
 mailRoutes(app);
+kostenRoutes(app);
 
 // Web-App ausliefern
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -29,11 +31,14 @@ if (clientDir) {
   app.register(fastifyStatic, {
     root: clientDir,
     setHeaders: (res, p) => {
-      if (p.endsWith('index.html') || p.endsWith('sw.js')) res.setHeader('Cache-Control', 'no-cache');
+      if (p.endsWith('index.html') || p.endsWith('sw.js') || p.endsWith('kosten-sync.js')) res.setHeader('Cache-Control', 'no-cache');
     },
   });
+  // Kostenverfolgung: /kosten → /kosten/
+  app.get('/kosten', (_req, reply) => reply.redirect('/kosten/'));
   app.setNotFoundHandler((req, reply) => {
     if (req.url.startsWith('/api/')) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (req.url.startsWith('/kosten/')) return reply.sendFile('kosten/index.html');
     return reply.sendFile('index.html');
   });
 }

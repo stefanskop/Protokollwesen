@@ -121,6 +121,12 @@ Neue Versionen erscheinen automatisch auf GitHub. Zum Einspielen:
 
 Ihre Daten bleiben dabei erhalten. Datenbank-Umstellungen laufen beim Start automatisch.
 
+## Kostenverfolgung
+
+Die Kostenverfolgung ist im selben Programm enthalten. Nach dem Update ist sie unter `http://<IP-der-NAS>:8080/kosten/` bzw. `https://<Ihre-Adresse>/kosten/` erreichbar, oder über **Kostenverfolgung** in der Seitenleiste. Es sind keine weiteren Einstellungen auf der NAS nötig. Ihre Daten liegen im selben `data`-Ordner und sind damit in Hyper Backup und der täglichen Sicherung enthalten.
+
+Am iPad: `https://<Ihre-Adresse>/kosten/` in Safari öffnen → Teilen → **Zum Home-Bildschirm**.
+
 ## Hilfe bei Problemen
 
 - **Container startet nicht:** Container Manager → Container → protokollwesen → **Protokoll**. Den Text an mich schicken.

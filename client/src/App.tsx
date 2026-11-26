@@ -64,6 +64,10 @@ export function App() {
               <span className="ico">▦</span>
               <span className="label">Projekte</span>
             </NavLink>
+            <a href="/kosten/" title="Kostenverfolgung Hochbau (ÖNORM B 1801-1)">
+              <span className="ico">€</span>
+              <span className="label">Kostenverfolgung</span>
+            </a>
             <NavLink to="/kontakte">
               <span className="ico">☎</span>
               <span className="label">Firmen & Kontakte</span>

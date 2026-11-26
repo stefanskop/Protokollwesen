@@ -34,6 +34,20 @@ Den gesamten Ordner bitte zusätzlich in **Hyper Backup** aufnehmen.
 - Liste der offenen Punkte je Projekt, mit Filter nach Firma und überfälligen Punkten.
 - Offline-Betrieb: Alle Änderungen werden lokal gespeichert und bei Verbindung automatisch abgeglichen. Gleichzeitige Änderungen am selben Feld von zwei Geräten werden gemeldet.
 
+## Kostenverfolgung Hochbau (`/kosten/`)
+
+Die Kostenverfolgung (ÖNORM B 1801-1: Budget, Aufträge, Nachträge, Rechnungen, Rechnungsprüfung) läuft im selben Container unter **`https://<Adresse>/kosten/`**. In der Seitenleiste des Protokollwesens führt der Eintrag **Kostenverfolgung** dorthin.
+
+- **Gleiche Anmeldung** wie im Protokollwesen. Wer dort im selben Browser angemeldet ist, muss sich nicht erneut anmelden.
+- **Projekte liegen auf der NAS** (Tabelle `kosten` in `protokollwesen.db`, Originalrechnungen unter `data/files/kosten/`). Jede Änderung wird nach wenigen Sekunden übertragen. Andere Geräte übernehmen sie beim nächsten Abgleich (alle 30 s, beim Wechsel ins Fenster oder über die Statusanzeige links unten).
+- **Offline** wird im Browser weitergearbeitet. Nicht übertragene Änderungen werden später nachgeholt.
+- **Gleichzeitige Änderung** am selben Projekt auf zwei Geräten: Das Programm fragt nach. Zur Wahl stehen „Beide behalten“ (eigener Stand als Kopie), „Stand vom Server übernehmen“ (eigener Stand wird vorher als .json heruntergeladen) und „Meinen Stand übertragen“.
+- Am Server bleiben die **letzten fünf Stände** jedes Projekts erhalten (Statusanzeige → Frühere Stände → Als Kopie öffnen).
+- **Zugriff:** Administratoren sehen alle Projekte. Mitarbeiter sehen ihre eigenen und die für sie freigegebenen (Statusanzeige → Freigabe).
+- Bereits vorhandene Projekte aus der bisherigen Einzeldatei: Diese im Browser über „Projekt laden (.json)“ öffnen. Sie werden danach automatisch auf die NAS übertragen. Das Beispielprojekt bleibt nur im Browser.
+
+**Neue Version der Kostenverfolgung einspielen:** `kosten/Kostenverfolgung.html` durch die neue Datei ersetzen und auf `main` hochladen. Das Abgleich-Skript `kosten/kosten-sync.js` wird beim Bauen automatisch eingebunden, die HTML-Datei selbst muss dafür nicht angepasst werden. Voraussetzung ist, dass die globalen Funktionen `boot`, `loadStore`, `persist`, `normalizeProject` und die Objekte `STORE`, `P`, `START`, `PRJ`, `RPS`, `UI` und `IO` erhalten bleiben.
+
 ## Installation auf der Synology DS216+II
 
 **Schritt-für-Schritt-Anleitung: [docs/INSTALLATION_NAS.md](docs/INSTALLATION_NAS.md)** – das Programm wird fertig von GitHub geladen (ghcr.io), nicht auf der NAS gebaut.
