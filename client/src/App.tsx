@@ -1,5 +1,5 @@
 import { useEffect, useState, createContext, useContext } from 'react';
-import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import type { UserInfo } from '../../shared/src/index';
 import { api, getStoredUser, storeLogin, clearLogin, getToken } from './api';
@@ -13,8 +13,8 @@ import { ImportPage } from './pages/Import';
 import { PlansPage } from './pages/Plans';
 import { DefectsPage } from './pages/Defects';
 import { useProjects } from './data';
+import { Header } from './components/Header';
 
-const currentPath = () => window.location.pathname;
 
 /** Öffnet einen Projektbereich im zuletzt verwendeten Projekt */
 function LastProject({ to }: { to: string }) {
@@ -78,34 +78,8 @@ export function App() {
   return (
     <UserCtx.Provider value={user}>
       <BrowserRouter>
-        <div className="app">
-          <nav className="side">
-            <a className="logo" href="/" title="Projekte">
-              <img src="/logo.png" alt="Skop Bauconsulting" />
-            </a>
-            <NavLink to="/" end>
-              <span className="ico">▦</span>
-              <span className="label">Projekte</span>
-            </NavLink>
-            <NavLink to="/kontakte">
-              <span className="ico">☎</span>
-              <span className="label">Firmen & Kontakte</span>
-            </NavLink>
-            <NavLink to="/plaene" className={() => (/\/plaene$/.test(currentPath()) ? 'active' : '')}>
-              <span className="ico">🗺</span>
-              <span className="label">Pläne</span>
-            </NavLink>
-            <NavLink to="/maengel" className={() => (/\/maengel$/.test(currentPath()) ? 'active' : '')}>
-              <span className="ico">⚠</span>
-              <span className="label">Mängel</span>
-            </NavLink>
-            <NavLink to="/einstellungen">
-              <span className="ico">⚙</span>
-              <span className="label">Einstellungen</span>
-            </NavLink>
-            <div className="grow" />
-            <div className="user">{user.name}</div>
-          </nav>
+        <div className="app2">
+          <Header />
           <Main>
             <Notices />
             <Routes>
@@ -118,6 +92,20 @@ export function App() {
               <Route path="/plaene" element={<LastProject to="plaene" />} />
               <Route path="/maengel" element={<LastProject to="maengel" />} />
               <Route path="/p/:pid/maengel" element={<DefectsPage />} />
+              <Route
+                path="/p/:pid/einstellungen"
+                element={
+                  <SettingsPage
+                    onLogout={async () => {
+                      try {
+                        await api('/api/logout', { method: 'POST' });
+                      } catch {}
+                      clearLogin();
+                      setUser(null);
+                    }}
+                  />
+                }
+              />
               <Route path="/import" element={<ImportPage />} />
               <Route
                 path="/einstellungen"
@@ -211,10 +199,11 @@ function Login({ onLogin }: { onLogin: (u: UserInfo) => void }) {
     }
   };
   return (
+    <div className="login-bg">
     <form className="login" onSubmit={submit}>
       <img src="/logo.png" alt="Skop Bauconsulting" />
-      <h1>Protokollwesen</h1>
-      <p className="muted small">Bitte melden Sie sich an.</p>
+      <h1>Projektmanagement</h1>
+      <p className="muted small">Protokolle · Pläne · Mängel · Kosten – bitte melden Sie sich an.</p>
       {err && <div className="notice red">{err}</div>}
       <label className="f">
         E-Mail
@@ -228,5 +217,6 @@ function Login({ onLogin }: { onLogin: (u: UserInfo) => void }) {
         Anmelden
       </button>
     </form>
+    </div>
   );
 }

@@ -86,7 +86,6 @@ export function ImportPage() {
       <div className="topbar">
         <h1>Import aus Baumaster</h1>
         <div className="grow" />
-        <SyncBadge />
       </div>
       <div className="card">
         <p style={{ marginTop: 0 }}>

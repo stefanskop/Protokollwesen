@@ -1,11 +1,11 @@
 /*
- * Kostenverfolgung Hochbau – Anbindung an den Protokollwesen-Server (NAS)
+ * Kostenverfolgung Hochbau – Anbindung an den Projektmanagement-Server (NAS)
  *
  * Wird beim Bauen automatisch am Ende von Kostenverfolgung.html eingebunden.
  * Die Kostenverfolgung selbst bleibt unverändert: Sie arbeitet weiter mit dem
  * Browserspeicher. Dieses Skript gleicht diesen Speicher mit dem Server ab:
  *
- *  - Anmeldung wie im Protokollwesen (gleiches Konto, gleiche Anmeldung im Browser)
+ *  - Anmeldung wie im Projektmanagement (gleiches Konto, gleiche Anmeldung im Browser)
  *  - Beim Start werden die Projekte vom Server geladen
  *  - Jede Änderung wird nach wenigen Sekunden auf den Server übertragen
  *  - Ohne Verbindung wird lokal weitergearbeitet und später übertragen
@@ -208,7 +208,7 @@
     setTimeout(() => { KS.nextConflict(); KS.sync(); }, 600);
   }
 
-  // Offline-Betrieb: gleicher Service Worker wie das Protokollwesen (hält auch diese Seite vor)
+  // Offline-Betrieb: gleicher Service Worker wie das Projektmanagement (hält auch diese Seite vor)
   try { if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('/sw.js').catch(() => { }); } catch (e) { }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
@@ -220,7 +220,7 @@
     window.persist = function () { const r = origPersist.apply(this, arguments); KS.soon(); return r; };
     const origDemo = PRJ.demo;
     PRJ.demo = function () { const r = origDemo.apply(PRJ, arguments); if (P) { KS.st.localOnly[P.id] = 1; KS.saveState(); KS.renderPill(); } return r; };
-    // Startseite: Hinweis auf Server-Ablage + Bereich Protokollwesen im gleichen Aufbau
+    // Startseite: Hinweis auf Server-Ablage + Bereich Projektmanagement im gleichen Aufbau
     const origRender = START.render;
     START.render = function () {
       origRender.apply(START, arguments);
@@ -231,7 +231,7 @@
         d.innerHTML = KS.user
           ? `Angemeldet als <b>${h(KS.user.name)}</b> · Projekte werden automatisch auf dem Server (NAS) gespeichert und auf allen Geräten abgeglichen.`
           : 'Nicht angemeldet – Projekte liegen nur in diesem Browser.';
-        d.innerHTML += ' &nbsp;<a href="/" style="font-weight:600">← zum Protokollwesen</a>';
+        d.innerHTML += ' &nbsp;<a href="/" style="font-weight:600">← zum Projektmanagement</a>';
         box.appendChild(d);
       }
     };
@@ -567,7 +567,7 @@
     el.id = 'ks-login';
     el.innerHTML = `<form class="ks-card" autocomplete="on">
       <div class="ks-title">Kostenverfolgung Hochbau</div>
-      <div class="ks-muted" style="margin-bottom:14px">Anmeldung mit dem Konto des Protokollwesens</div>
+      <div class="ks-muted" style="margin-bottom:14px">Anmeldung mit dem Konto des Projektmanagements</div>
       <label>E-Mail<input type="email" name="email" autocomplete="username" required value="${h((KS.storedUser() || {}).email || '')}"></label>
       <label>Passwort<input type="password" name="password" autocomplete="current-password" required></label>
       <div class="ks-err" id="ks-login-err"></div>
@@ -657,7 +657,7 @@
     KS.renderBack();
   };
 
-  /** Knopf zurück zum verknüpften Projekt im Protokollwesen */
+  /** Knopf zurück zum verknüpften Projekt im Projektmanagement */
   KS.renderBack = function () {
     let b = document.getElementById('ks-back');
     const pid = P && P.meta && P.meta.pwProjectId;
@@ -667,7 +667,7 @@
       document.body.appendChild(b);
     }
     b.href = pid ? '/p/' + encodeURIComponent(pid) : '/';
-    b.textContent = pid ? '← Protokolle, Pläne & Mängel dieses Projekts' : '← Protokollwesen';
+    b.textContent = pid ? '← zurück zum Projekt' : '← Projektmanagement';
   };
 
   function modal(title, body, btns, wide) {
@@ -701,7 +701,7 @@
     }
     const m = modal('Server-Abgleich (NAS)', body, [
       { t: 'Jetzt abgleichen', cls: 'pri', fn: () => { closeModal(); KS.sync(); } },
-      { t: '← Zum Protokollwesen', fn: () => { location.href = P && P.meta && P.meta.pwProjectId ? '/p/' + encodeURIComponent(P.meta.pwProjectId) : '/'; } },
+      { t: '← Zum Projektmanagement', fn: () => { location.href = P && P.meta && P.meta.pwProjectId ? '/p/' + encodeURIComponent(P.meta.pwProjectId) : '/'; } },
       { t: 'Abmelden', fn: () => KS.logout() },
       { t: 'Schließen', fn: closeModal },
     ], true);
@@ -749,7 +749,7 @@
     }));
   };
 
-  /* ---------------- Aufruf aus dem Protokollwesen: /kosten/?pw=<Projekt>&nr=…&name=… ---------------- */
+  /* ---------------- Aufruf aus dem Projektmanagement: /kosten/?pw=<Projekt>&nr=…&name=… ---------------- */
   KS.deepLink = function () {
     const q = new URLSearchParams(location.search);
     const pw = q.get('pw');

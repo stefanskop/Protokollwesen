@@ -1,4 +1,4 @@
-# Protokollwesen – Skop Bauconsulting
+# Projektmanagement – Skop Bauconsulting
 
 Besprechungsprotokolle und Baudokumentation für PC, Mac und iPad, mit Offline-Betrieb und Synchronisation über den eigenen Server (Synology NAS).
 

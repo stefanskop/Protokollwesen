@@ -41,7 +41,7 @@ export function mailRoutes(app: FastifyInstance) {
       const s = getServerSetting<Smtp>('smtp', DEFAULT_SMTP);
       try {
         await transport(s).verify();
-        await transport(s).sendMail({ from: s.from, to: req.user!.email, subject: 'Protokollwesen – Testnachricht', text: 'Der E-Mail-Versand funktioniert.' });
+        await transport(s).sendMail({ from: s.from, to: req.user!.email, subject: 'Projektmanagement – Testnachricht', text: 'Der E-Mail-Versand funktioniert.' });
         return { ok: true };
       } catch (e: any) {
         return reply.code(400).send({ error: e.message });

@@ -164,17 +164,7 @@ export function Workspace() {
   return (
     <div className="ws-wrap">
       <div className="ws-top">
-        <select className="proj-select" value={project.id} onChange={(e) => nav('/p/' + e.target.value)}>
-          {projects
-            .filter((p) => !p.archived || p.id === project.id)
-            .map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.number ? p.number + ' ' : ''}
-                {p.name}
-              </option>
-            ))}
-        </select>
-        <ProjectTabs project={project} active="protokolle" />
+        <span className="ws-title"><i className="fa-solid fa-clipboard-list" /> Protokolle</span>
         <label className="toggle">
           <input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} /> Abgeschlossene
         </label>
@@ -203,7 +193,6 @@ export function Workspace() {
             )}
           </>
         )}
-        <SyncBadge />
       </div>
 
       <div className={wsClass}>

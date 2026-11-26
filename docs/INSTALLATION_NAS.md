@@ -1,4 +1,4 @@
-# Installation auf der Synology DS216+II
+# Installation auf der Synology DS216+II (Projektmanagement)
 
 Dauer ca. 30 Minuten. Das Programm wird fertig von GitHub geladen, auf der NAS wird nichts gebaut.
 

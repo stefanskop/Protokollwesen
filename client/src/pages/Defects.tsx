@@ -185,15 +185,7 @@ export function DefectsPage() {
   return (
     <div className="ws-wrap">
       <div className="ws-top">
-        <select className="proj-select" value={project.id} onChange={(e) => nav(`/p/${e.target.value}/maengel`)}>
-          {projects.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.number ? p.number + ' ' : ''}
-              {p.name}
-            </option>
-          ))}
-        </select>
-        <ProjectTabs project={project} active="maengel" />
+        <span className="ws-title"><i className="fa-solid fa-triangle-exclamation" /> Mängel</span>
         <div className="grow" />
         {busy && <span className="badge orange">{busy}</span>}
         <button className="btn" onClick={() => setChoosePlan(true)} disabled={!d.plans.length} title="Mängel im Plan anzeigen">
@@ -208,7 +200,6 @@ export function DefectsPage() {
         <button className="btn primary" onClick={newDefect}>
           + Mangel
         </button>
-        <SyncBadge />
       </div>
 
       <div className="defects">

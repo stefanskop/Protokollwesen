@@ -28,7 +28,6 @@ export function SettingsPage({ onLogout }: { onLogout: () => void }) {
       <div className="topbar">
         <h1>Einstellungen</h1>
         <div className="grow" />
-        <SyncBadge />
       </div>
       <div className="tabs">
         {tabs.map(([k, l]) => (

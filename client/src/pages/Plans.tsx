@@ -108,15 +108,7 @@ export function PlansPage() {
   return (
     <div className="ws-wrap">
       <div className="ws-top">
-        <select className="proj-select" value={project.id} onChange={(e) => nav(`/p/${e.target.value}/plaene`)}>
-          {projects.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.number ? p.number + ' ' : ''}
-              {p.name}
-            </option>
-          ))}
-        </select>
-        <ProjectTabs project={project} active="plaene" />
+        <span className="ws-title"><i className="fa-solid fa-map" /> Pläne</span>
         <input placeholder="Pläne suchen…" value={q} onChange={(e) => setQ(e.target.value)} style={{ maxWidth: 280 }} />
         <label className="toggle">
           <input type="checkbox" checked={onlyActive} onChange={(e) => setOnlyActive(e.target.checked)} /> nur aktive
@@ -130,7 +122,6 @@ export function PlansPage() {
           + Plan
           <input type="file" accept="application/pdf,image/*" multiple hidden onChange={(e) => (upload(e.target.files), (e.target.value = ''))} />
         </label>
-        <SyncBadge />
       </div>
       <div className="plans">
         <div className="ws-col">

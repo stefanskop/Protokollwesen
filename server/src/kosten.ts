@@ -119,7 +119,7 @@ export function kostenRoutes(app: FastifyInstance) {
       done(null, body),
     );
 
-    /** Startseite: Übersicht der Protokollwesen-Projekte (Anzahl Protokolle, offene Punkte, letzte Änderung) */
+    /** Startseite: Übersicht der Projekte (Anzahl Protokolle, offene Punkte, letzte Änderung) */
     r.get('/api/protokoll/overview', async (req) => {
       const ids = accessibleProjects(req.user!);
       const rows = db.prepare(`SELECT id, type, project_id, data, updated_at FROM records WHERE deleted=0 AND type IN ('project','protocol','item')`).all() as any[];

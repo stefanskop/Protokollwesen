@@ -21,7 +21,6 @@ export function ContactsPage() {
       <div className="topbar">
         <h1>Firmen & Kontakte</h1>
         <div className="grow" />
-        <SyncBadge />
         <button className="btn" onClick={() => setEditCompany({})}>
           + Firma
         </button>

@@ -64,8 +64,8 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
       },
       manifest: {
-        name: 'Protokollwesen – Skop Bauconsulting',
-        short_name: 'Protokolle',
+        name: 'Projektmanagement – Skop Bauconsulting',
+        short_name: 'Projekte',
         lang: 'de',
         start_url: '/',
         display: 'standalone',

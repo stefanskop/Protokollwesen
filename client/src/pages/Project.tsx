@@ -25,32 +25,31 @@ import {
 export function ProjectPage() {
   const { pid } = useParams();
   const d = useProjectData(pid);
-  const [tab, setTab] = useState<'offen' | 'beteiligte' | 'daten'>('offen');
+  const [tab, setTab] = useState<'offen' | 'beteiligte' | 'daten'>('daten');
   if (!d.loaded) return null;
   if (!d.project) return <div className="empty">Projekt nicht gefunden (evtl. noch nicht synchronisiert).</div>;
   const p = d.project;
   return (
     <>
-      <ProjectTabs project={p} active="projekt" />
-      <div className="topbar">
-        <h1>
-          {p.number && <span className="muted">{p.number} · </span>}
-          {p.name}
-        </h1>
-        {p.archived && <span className="badge">archiviert</span>}
-        <div className="grow" />
-        <SyncBadge />
+      <div className="card sec-card">
+        <div className="sec-h" style={{ border: 'none', margin: 0, padding: 0 }}>
+          <i className="fa-solid fa-sliders" /> 00 Projektdaten, Beteiligte &amp; offene Punkte
+          {p.archived && <span className="badge">archiviert</span>}
+        </div>
+        <div className="muted small" style={{ marginTop: 4 }}>
+          Stammdaten des Projekts, Projektbeteiligte (Beteiligtenliste der Protokolle) und alle offenen Punkte über alle Protokolle.
+        </div>
       </div>
       <div className="tabs">
         {(
           [
-            ['offen', 'Offene Punkte'],
-            ['beteiligte', `Beteiligte (${p.participants.length})`],
-            ['daten', 'Projektdaten'],
+            ['daten', 'fa-sliders', 'Stammdaten'],
+            ['beteiligte', 'fa-users', `Beteiligte (${p.participants.length})`],
+            ['offen', 'fa-list-check', 'Offene Punkte'],
           ] as const
-        ).map(([k, l]) => (
+        ).map(([k, ic, l]) => (
           <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>
-            {l}
+            <i className={'fa-solid ' + ic} /> {l}
           </button>
         ))}
       </div>
@@ -419,6 +418,9 @@ function ProjectData({ project }: { project: Project }) {
   return (
     <>
       <div className="card">
+        <h3>
+          <i className="fa-solid fa-file-signature" /> 1. Allgemeine Projekt-Stammdaten
+        </h3>
         <div className="grid2">
           {F({ k: "number", label: "Projektnummer" })}
           {F({ k: "name", label: "Projektbezeichnung" })}
@@ -445,7 +447,9 @@ function ProjectData({ project }: { project: Project }) {
         </div>
       </div>
       <div className="card">
-        <h3>Mitarbeiter mit Zugriff</h3>
+        <h3>
+          <i className="fa-solid fa-user-lock" /> 2. Mitarbeiter mit Zugriff
+        </h3>
         {users.length === 0 && <div className="muted small">Benutzerliste nur online verfügbar.</div>}
         {users
           .filter((u) => u.active)
@@ -462,7 +466,9 @@ function ProjectData({ project }: { project: Project }) {
           ))}
       </div>
       <div className="card">
-        <h3>Projektspezifische Listen</h3>
+        <h3>
+          <i className="fa-solid fa-list" /> 3. Projektspezifische Listen &amp; Protokollarten
+        </h3>
         {ListOverride({ k: "categories", label: "Zusatzfeld" })}
         {ListOverride({ k: "itemTypes", label: "Typen" })}
         {ListOverride({ k: "trades", label: "Gewerke" })}

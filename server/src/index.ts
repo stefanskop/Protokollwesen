@@ -46,4 +46,4 @@ if (clientDir) {
 }
 
 const port = parseInt(process.env.PORT || '8080', 10);
-app.listen({ port, host: '0.0.0.0' }).then(() => console.log(`Protokollwesen läuft auf Port ${port}`));
+app.listen({ port, host: '0.0.0.0' }).then(() => console.log(`Projektmanagement läuft auf Port ${port}`));
