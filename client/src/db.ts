@@ -4,8 +4,23 @@ import { normalize, uuid } from '../../shared/src/index';
 
 export interface BlobRow {
   id: string;
-  blob: Blob;
+  /** Binärdaten als ArrayBuffer (Safari kann Blobs in IndexedDB nicht zuverlässig lesen) */
+  data?: ArrayBuffer;
+  type?: string;
+  /** ältere Einträge */
+  blob?: Blob;
   uploaded: boolean;
+}
+
+export async function putBlob(id: string, blob: Blob, uploaded: boolean) {
+  const data = await blob.arrayBuffer();
+  await ldb.blobs.put({ id, data, type: blob.type || 'application/octet-stream', uploaded });
+}
+
+export function rowToBlob(r: BlobRow | undefined): Blob | undefined {
+  if (!r) return undefined;
+  if (r.data) return new Blob([r.data], { type: r.type || 'application/octet-stream' });
+  return r.blob;
 }
 export interface MetaRow {
   key: string;

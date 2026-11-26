@@ -1,5 +1,5 @@
 // Synchronisation: lokale Änderungen hochladen, Serveränderungen holen, Dateien abgleichen.
-import { ldb, getMeta, setMeta, onLocalWrite } from './db';
+import { ldb, getMeta, setMeta, onLocalWrite, putBlob, rowToBlob } from './db';
 import { api, ApiError } from './api';
 import type { AnyRecord, PullResult, PushResult, FileMeta } from '../../shared/src/index';
 
@@ -131,7 +131,9 @@ async function pull() {
 async function uploadBlobs() {
   const pending = await ldb.blobs.filter((b) => !b.uploaded).toArray();
   for (const b of pending) {
-    await api('/api/files/' + b.id, { method: 'PUT', raw: b.blob, contentType: b.blob.type || 'application/octet-stream' });
+    const blob = rowToBlob(b);
+    if (!blob) continue;
+    await api('/api/files/' + b.id, { method: 'PUT', raw: blob, contentType: blob.type || 'application/octet-stream' });
     await ldb.blobs.update(b.id, { uploaded: true });
   }
 }
@@ -150,7 +152,7 @@ async function prefetchFiles() {
       if (await ldb.blobs.get(f.id)) continue;
       try {
         const blob = await api<Blob>('/api/files/' + f.id);
-        await ldb.blobs.put({ id: f.id, blob, uploaded: true });
+        await putBlob(f.id, blob, true);
       } catch {
         /* später erneut */
       }
@@ -160,12 +162,14 @@ async function prefetchFiles() {
   }
 }
 
-export async function getBlob(id: string): Promise<Blob | undefined> {
-  const b = await ldb.blobs.get(id);
-  if (b) return b.blob;
+export async function getBlob(id: string, fromServer = false): Promise<Blob | undefined> {
+  if (!fromServer) {
+    const b = rowToBlob(await ldb.blobs.get(id));
+    if (b && b.size) return b;
+  }
   try {
     const blob = await api<Blob>('/api/files/' + id);
-    await ldb.blobs.put({ id, blob, uploaded: true });
+    await putBlob(id, blob, true);
     return blob;
   } catch {
     return undefined;

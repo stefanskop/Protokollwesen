@@ -1,7 +1,7 @@
 // Lese-Hooks und Hilfsfunktionen für die Oberfläche
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState } from 'react';
-import { ldb, save } from './db';
+import { ldb, save, putBlob, rowToBlob } from './db';
 import { getBlob } from './sync';
 import {
   normalize,
@@ -65,16 +65,21 @@ export function useProjectData(projectId: string | undefined) {
   };
 }
 
-/** Objekt-URL für eine Datei (lokal oder vom Server) */
-export function useFileUrl(id?: string | null) {
+/** Objekt-URL für eine Datei (lokal oder vom Server). retry() lädt neu vom Server. */
+export function useFileUrl(id?: string | null): string | undefined {
+  return useFileUrlEx(id).url;
+}
+export function useFileUrlEx(id?: string | null) {
   const [url, setUrl] = useState<string>();
+  const [server, setServer] = useState(false);
   const blobRow = useLiveQuery(() => (id ? ldb.blobs.get(id) : undefined), [id]);
   useEffect(() => {
     let u: string | undefined;
     let cancelled = false;
     (async () => {
       if (!id) return setUrl(undefined);
-      const b = blobRow?.blob || (await getBlob(id));
+      const local = server ? undefined : rowToBlob(blobRow);
+      const b = local && local.size ? local : await getBlob(id, server);
       if (cancelled || !b) return;
       u = URL.createObjectURL(b);
       setUrl(u);
@@ -83,17 +88,40 @@ export function useFileUrl(id?: string | null) {
       cancelled = true;
       if (u) URL.revokeObjectURL(u);
     };
-  }, [id, blobRow]);
-  return url;
+  }, [id, blobRow, server]);
+  return { url, retry: () => !server && setServer(true), fromServer: server };
 }
 
-/** Bild verkleinern (iPad-Fotos ~12 MP) → max. 2000 px JPEG */
-export async function shrinkImage(file: Blob, max = 2000, quality = 0.85): Promise<Blob> {
-  if (!file.type.startsWith('image/') || file.type === 'image/gif' || file.type === 'image/svg+xml') return file;
-  const bmp = await createImageBitmap(file).catch(() => null);
+/** Bild dekodieren – createImageBitmap, sonst über <img> (Safari: HEIC) */
+async function decodeImage(file: Blob): Promise<CanvasImageSource & { width: number; height: number } | null> {
+  try {
+    return await createImageBitmap(file);
+  } catch {
+    /* weiter mit <img> */
+  }
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    return img;
+  } catch {
+    return null;
+  } finally {
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+}
+
+const isHeic = (f: Blob & { name?: string }) => /heic|heif/i.test(f.type) || /\.(heic|heif)$/i.test(f.name || '');
+
+/** Bild verkleinern (iPad-Fotos ~12 MP) und in JPEG umwandeln (auch HEIC) → max. 2000 px */
+export async function shrinkImage(file: Blob & { name?: string }, max = 2000, quality = 0.85): Promise<Blob> {
+  const heic = isHeic(file);
+  if (!heic && (!file.type.startsWith('image/') || file.type === 'image/gif' || file.type === 'image/svg+xml')) return file;
+  const bmp = await decodeImage(file);
   if (!bmp) return file;
   const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
-  if (scale === 1 && file.size < 1.5e6 && file.type === 'image/jpeg') return file;
+  if (!heic && scale === 1 && file.size < 1.5e6 && file.type === 'image/jpeg') return file;
   const c = document.createElement('canvas');
   c.width = Math.round(bmp.width * scale);
   c.height = Math.round(bmp.height * scale);
@@ -105,8 +133,11 @@ export async function shrinkImage(file: Blob, max = 2000, quality = 0.85): Promi
 export async function addFile(file: File | Blob, projectId: string | null, name?: string): Promise<string> {
   const id = uuid();
   const blob = await shrinkImage(file);
-  await ldb.blobs.put({ id, blob, uploaded: false });
-  await save<FileMeta>('file', id, { name: name || (file as File).name || 'Datei', mime: blob.type || 'application/octet-stream', size: blob.size } as any, projectId);
+  await putBlob(id, blob, false);
+  let fname = name || (file as File).name || 'Datei';
+  if (blob.type === 'image/jpeg' && /\.(heic|heif|png)$/i.test(fname)) fname = fname.replace(/\.[^.]+$/, '.jpg');
+  const mime = blob.type || (isHeic(file as any) ? 'image/heic' : 'application/octet-stream');
+  await save<FileMeta>('file', id, { name: fname, mime, size: blob.size } as any, projectId);
   return id;
 }
 

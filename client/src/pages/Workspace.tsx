@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import { save, remove, getRec } from '../db';
-import { useProjectData, useProjects, useGlobal, useSettings, addFile, useFileUrl } from '../data';
+import { useProjectData, useProjects, useGlobal, useSettings, addFile, useFileUrlEx } from '../data';
 import { generateProtocolPdf } from '../pdfgen';
 import { LazyInput, RichEditor, RichView, ContactSelect, ListSelect, DateInput, Modal } from '../components/ui';
 import { SyncBadge, useUser } from '../App';
@@ -651,7 +651,7 @@ function EntryBlock({ d, entry, editable }: { d: D; entry: Entry; editable: bool
 }
 
 function Attachment({ id, meta, editable, origin, onRemove }: { id: string; meta?: FileMeta; editable: boolean; origin?: string; onRemove: () => void }) {
-  const url = useFileUrl(id);
+  const { url, retry } = useFileUrlEx(id);
   const [big, setBig] = useState(false);
   const isImg = meta?.mime?.startsWith('image/');
   useEffect(() => {
@@ -664,7 +664,7 @@ function Attachment({ id, meta, editable, origin, onRemove }: { id: string; meta
   return (
     <div className="att">
       {isImg ? (
-        url ? <img src={url} alt="" onClick={() => setBig(true)} /> : <div className="att-ph">lädt…</div>
+        url ? <img src={url} alt="" onClick={() => setBig(true)} onError={retry} /> : <div className="att-ph">lädt…</div>
       ) : (
         <a className="att-file" href={url} download={meta?.name} target="_blank" rel="noreferrer">
           📄 <span>{meta?.name || 'Datei'}</span>
