@@ -32,6 +32,7 @@ export const DEFAULT_SETTINGS: Omit<Settings, 'id' | 'type'> = {
   companyPhone: '',
   logoFileId: null,
   signature: 'Gez. Bmstr. Dipl.-Ing. Stefan Skop',
+  entryLabel: 'Anm.',
   endText:
     'Bei Einsprüchen bzw. notwendigen Anmerkungen zu den Inhalten dieses Protokolls, bitten wir Sie diese uns innerhalb von 4 Tagen mitzuteilen, andernfalls gehen wir von Ihrem Einverständnis zu den protokollierten Punkten aus. Kursive Einträge sind Ergänzungen zum Protokoll.',
   protocolTypes: [

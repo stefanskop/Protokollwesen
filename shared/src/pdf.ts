@@ -287,12 +287,17 @@ function itemBlock(ctx: PdfContext, it: Item, accent: string): any {
   // Mittelspalte: Titel + Einträge
   const mid: any[] = [{ text: it.title, bold: true, fontSize: 9.5, margin: [0, 0, 0, 6] }];
   const pics: any[] = [];
+  const docs: string[] = [];
   let picNo = 0;
   for (const e of entries) {
     const italic = e.addendum;
-    mid.push({ text: `Anm. ${fmtDate(e.date)}:`, italics: italic, fontSize: 8.5, margin: [0, 2, 0, 1] });
+    mid.push({ text: `${settings.entryLabel || 'Anm.'} ${fmtDate(e.date)}:`, italics: italic, fontSize: 8.5, margin: [0, 2, 0, 1] });
     mid.push(...richTextToPdf(e.text, italic));
     const w = imgWidth[settings.pdf.imageSize];
+    for (const fid of e.fileIds) {
+      const meta = ctx.files.get(fid);
+      if (meta && !meta.mime?.startsWith('image/')) docs.push(meta.name + (meta.caption ? ` – ${meta.caption}` : ''));
+    }
     if (w) {
       for (const fid of e.fileIds) {
         const img = ctx.images.get(fid);
@@ -338,8 +343,13 @@ function itemBlock(ctx: PdfContext, it: Item, accent: string): any {
       : { text: '' },
   ];
   const body: any[] = [row];
-  if (pics.length) {
-    body.push([{ text: '' }, { colSpan: 2, stack: [{ text: 'Fotos & Daten', color: LINK, fontSize: 9.5, margin: [0, 4, 0, 0] }, { columns: pics, columnGap: 4 }] }, '']);
+  if (pics.length || docs.length) {
+    const stack: any[] = [{ text: 'Fotos & Daten', color: LINK, fontSize: 9.5, margin: [0, 4, 0, 2] }];
+    if (docs.length) stack.push({ ul: docs.map((d) => ({ text: d, fontSize: 8 })), margin: [0, 0, 0, 2] });
+    // Fotos in Reihen zu je max. 3 (klein) bzw. 2/1
+    const perRow = Math.max(1, Math.floor(400 / ((pics[0]?.width as number) || 140)));
+    for (let i = 0; i < pics.length; i += perRow) stack.push({ columns: pics.slice(i, i + perRow), columnGap: 4 });
+    body.push([{ text: '' }, { colSpan: 2, stack }, '']);
   }
   return {
     stack: [

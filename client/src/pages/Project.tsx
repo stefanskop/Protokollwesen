@@ -3,7 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { api } from '../api';
 import { save } from '../db';
 import { useProjectData, useGlobal, useSettings, addFile, useFileUrl } from '../data';
-import { Modal, LazyInput, StringListEditor } from '../components/ui';
+import { Modal, LazyInput, StringListEditor, DateInput } from '../components/ui';
 import { SyncBadge, useUser } from '../App';
 import { ContactPicker } from './Contacts';
 import {
@@ -23,14 +23,14 @@ import {
 export function ProjectPage() {
   const { pid } = useParams();
   const d = useProjectData(pid);
-  const [tab, setTab] = useState<'protokolle' | 'offen' | 'beteiligte' | 'daten'>('protokolle');
+  const [tab, setTab] = useState<'offen' | 'beteiligte' | 'daten'>('offen');
   if (!d.loaded) return null;
   if (!d.project) return <div className="empty">Projekt nicht gefunden (evtl. noch nicht synchronisiert).</div>;
   const p = d.project;
   return (
     <>
       <div className="crumbs">
-        <Link to="/">Projekte</Link> /
+        <Link to="/">Projekte</Link> / <Link to={'/p/' + p.id}>Protokolle</Link> /
       </div>
       <div className="topbar">
         <h1>
@@ -44,7 +44,6 @@ export function ProjectPage() {
       <div className="tabs">
         {(
           [
-            ['protokolle', 'Protokolle'],
             ['offen', 'Offene Punkte'],
             ['beteiligte', `Beteiligte (${p.participants.length})`],
             ['daten', 'Projektdaten'],
@@ -55,7 +54,6 @@ export function ProjectPage() {
           </button>
         ))}
       </div>
-      {tab === 'protokolle' && <ProtocolList d={d} />}
       {tab === 'offen' && <OpenItems d={d} />}
       {tab === 'beteiligte' && <Participants project={p} />}
       {tab === 'daten' && <ProjectData project={p} />}
@@ -130,7 +128,7 @@ function ProtocolList({ d }: { d: D }) {
   );
 }
 
-function NewProtocol({ d, onClose, onCreated }: { d: D; onClose: () => void; onCreated: (id: string) => void }) {
+export function NewProtocol({ d, onClose, onCreated, initialType }: { d: D; onClose: () => void; onCreated: (id: string) => void; initialType?: string }) {
   const settings = useSettings();
   const project = d.project!;
   const types = projectLists(project, settings).protocolTypes;
@@ -146,8 +144,9 @@ function NewProtocol({ d, onClose, onCreated }: { d: D; onClose: () => void; onC
       location: pv?.nextMeeting?.location || pv?.location || project.address,
     };
   };
-  const [typeKey, setTypeKeyRaw] = useState(types[0]?.key || '');
-  const [form, setForm] = useState(() => defaultsFor(types[0]?.key || ''));
+  const firstKey = (initialType && types.some((x) => x.key === initialType) ? initialType : types[0]?.key) || '';
+  const [typeKey, setTypeKeyRaw] = useState(firstKey);
+  const [form, setForm] = useState(() => defaultsFor(firstKey));
   const setTypeKey = (k: string) => {
     setTypeKeyRaw(k);
     setForm(defaultsFor(k));
@@ -223,7 +222,7 @@ function NewProtocol({ d, onClose, onCreated }: { d: D; onClose: () => void; onC
       <div className="grid3">
         <label className="f">
           Datum
-          <input type="date" {...f('date')} />
+          <DateInput value={form.date} onChange={(v) => setForm({ ...form, date: v || todayIso() })} />
         </label>
         <label className="f">
           von
@@ -297,7 +296,7 @@ function OpenItems({ d }: { d: D }) {
                 const lp = lastProtocolOf(i.id);
                 const due = i.dueTo || i.dueFrom;
                 return (
-                  <tr key={i.id} className="click" onClick={() => lp && nav(`/p/${i.projectId}/protokoll/${lp.id}#${i.id}`)}>
+                  <tr key={i.id} className="click" onClick={() => lp && nav(`/p/${i.projectId}?art=${lp.typeKey}&p=${lp.id}&i=${i.id}`)}>
                     <td className="small">{i.code}</td>
                     <td>
                       {i.priority === 'hoch' && <span style={{ color: 'var(--red)' }}>● </span>}

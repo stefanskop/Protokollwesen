@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Navigate } from 'react-router-dom';
 import { save, remove } from '../db';
 import { api } from '../api';
 import { useProjectData, useGlobal, useSettings, addFile, blobToDataUrl } from '../data';
 import { generateProtocolPdf } from '../pdfgen';
-import { Modal, LazyInput, LazyTextarea, RichEditor, RichView, ContactSelect, ListSelect, Thumb } from '../components/ui';
+import { Modal, LazyInput, LazyTextarea, DateInput } from '../components/ui';
 import { SyncBadge, useUser } from '../App';
 import {
   fmtDate,
@@ -28,375 +28,17 @@ import {
 
 type D = ReturnType<typeof useProjectData>;
 
+/** alte Adresse → Arbeitsansicht */
 export function ProtocolPage() {
   const { pid, prid } = useParams();
   const d = useProjectData(pid);
-  const settings = useSettings();
-  const user = useUser();
-  const [tab, setTab] = useState<'punkte' | 'teilnehmer' | 'kopf' | 'naechste'>('punkte');
-  const [sending, setSending] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const protocol = prid ? d.protocolMap.get(prid) : undefined;
-
-  useEffect(() => {
-    // Sprung zu einem Punkt (aus „Offene Punkte“)
-    const h = decodeURIComponent(location.hash.slice(1));
-    if (h && d.loaded) setTimeout(() => document.getElementById(h)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
-  }, [d.loaded]);
-
+  const p = prid ? d.protocolMap.get(prid) : undefined;
   if (!d.loaded) return null;
-  if (!protocol || !d.project) return <div className="empty">Protokoll nicht gefunden.</div>;
-  const locked = isProtocolLocked(protocol);
-  const typeName = settings.protocolTypes.find((t) => t.key === protocol.typeKey)?.name || protocol.typeKey;
-  const set = (patch: Partial<Protocol>) => save<Protocol>('protocol', protocol.id, patch);
-
-  const close = async () => {
-    if (!confirm(protocol.mode === 'fortlaufend' ? 'Protokoll abschließen? Die Inhalte werden danach gesperrt.' : 'Protokoll als abgeschlossen markieren?')) return;
-    await set({ status: 'abgeschlossen', closedAt: new Date().toISOString(), closedBy: user.id, snapshot: protocol.mode === 'fortlaufend' ? makeSnapshot(protocol, d.itemMap) : null });
-  };
-  const unlock = async () => {
-    if (!confirm('Protokoll wieder freischalten? Änderungen sind danach wieder möglich.')) return;
-    await set({ status: 'entwurf', snapshot: null });
-  };
-  const preview = async () => {
-    setBusy(true);
-    const w = window.open('', '_blank');
-    try {
-      const { blob } = await generateProtocolPdf(protocol.id);
-      const url = URL.createObjectURL(blob);
-      if (w) w.location.href = url;
-      else location.href = url;
-    } catch (e: any) {
-      w?.close();
-      alert('PDF konnte nicht erstellt werden: ' + e.message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <>
-      <div className="crumbs">
-        <Link to="/">Projekte</Link> / <Link to={'/p/' + d.project.id}>{d.project.name}</Link> /
-      </div>
-      <div className="topbar">
-        <h1>
-          {typeName} | Nr. {protocol.code}
-        </h1>
-        {protocol.status === 'abgeschlossen' ? <span className="badge green">abgeschlossen</span> : <span className="badge orange">Entwurf</span>}
-        {protocol.sentAt && <span className="badge blue">versendet {fmtDate(protocol.sentAt)}</span>}
-        <div className="grow" />
-        <SyncBadge />
-      </div>
-      <div className="row" style={{ marginBottom: 6 }}>
-        <div className="muted">
-          {protocol.title} · {fmtDate(protocol.date)} {protocol.timeFrom && `· ${protocol.timeFrom}–${protocol.timeTo}`} · {protocol.mode === 'fortlaufend' ? 'fortlaufendes Protokoll' : 'Standardprotokoll'}
-        </div>
-        <div style={{ display: 'flex', gap: 6, flex: '0 0 auto' }}>
-          <button className="btn" onClick={preview} disabled={busy}>
-            PDF
-          </button>
-          <button className="btn" onClick={() => setSending(true)}>
-            Versenden
-          </button>
-          {protocol.status === 'entwurf' ? (
-            <button className="btn primary" onClick={close}>
-              Abschließen
-            </button>
-          ) : (
-            (user.role === 'admin' || protocol.mode === 'standard') && (
-              <button className="btn" onClick={unlock}>
-                Freischalten
-              </button>
-            )
-          )}
-        </div>
-      </div>
-      {locked && <div className="notice blue">Dieses fortlaufende Protokoll ist abgeschlossen und gesperrt. Ergänzungen erfolgen im nächsten Protokoll{user.role === 'admin' ? ' oder nach dem Freischalten' : ''}.</div>}
-      <div className="tabs">
-        {(
-          [
-            ['punkte', `Punkte (${protocol.itemIds.length})`],
-            ['teilnehmer', 'Teilnehmer & Verteiler'],
-            ['kopf', 'Kopfdaten & Texte'],
-            ['naechste', 'Nächste Besprechung'],
-          ] as const
-        ).map(([k, l]) => (
-          <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>
-            {l}
-          </button>
-        ))}
-      </div>
-      {tab === 'punkte' && <ItemsTab d={d} protocol={protocol} locked={locked} />}
-      {tab === 'teilnehmer' && <AttendeesTab d={d} protocol={protocol} locked={locked} />}
-      {tab === 'kopf' && <HeadTab protocol={protocol} locked={locked} />}
-      {tab === 'naechste' && <NextMeetingTab d={d} protocol={protocol} locked={locked} />}
-      {sending && <SendDialog d={d} protocol={protocol} typeName={typeName} onClose={() => setSending(false)} />}
-    </>
-  );
-}
-
-// ---------------------------------------------------------------- Punkte
-function ItemsTab({ d, protocol, locked }: { d: D; protocol: Protocol; locked: boolean }) {
-  const settings = useSettings();
-  const lists = projectLists(d.project!, settings);
-  const [q, setQ] = useState('');
-  const [adopt, setAdopt] = useState(false);
-  const groups = useMemo(() => groupedItems(protocol, d.itemMap), [protocol, d.itemMap]);
-  const ql = q.toLowerCase();
-
-  const newItem = async () => {
-    const seq = nextItemSeq(protocol, d.items);
-    const lastCat = groups.length ? groups[groups.length - 1].items.slice(-1)[0]?.category : undefined;
-    const id = await save<Item>(
-      'item',
-      null,
-      { originProtocolId: protocol.id, code: itemCode(protocol.code, seq), title: '', status: 'info', priority: 'normal', observerIds: [], category: lastCat || lists.categories[0], itemType: lastCat || lists.itemTypes[0] },
-      protocol.projectId,
-    );
-    await save<Entry>('entry', null, { itemId: id, protocolId: protocol.id, date: protocol.date, text: null, addendum: false, fileIds: [] }, protocol.projectId);
-    await save<Protocol>('protocol', protocol.id, { itemIds: [...protocol.itemIds, id] });
-    setTimeout(() => document.getElementById(id)?.querySelector<HTMLInputElement>('.title input')?.focus(), 150);
-  };
-
-  return (
-    <>
-      <div className="row" style={{ marginBottom: 12, alignItems: 'center' }}>
-        <input placeholder="Punkte durchsuchen…" value={q} onChange={(e) => setQ(e.target.value)} style={{ maxWidth: 320 }} />
-        <label className="f" style={{ margin: 0, maxWidth: 220 }}>
-          <select value={protocol.groupBy} disabled={locked} onChange={(e) => save<Protocol>('protocol', protocol.id, { groupBy: e.target.value as GroupBy })}>
-            <option value="category">Gliederung: Zusatzfeld</option>
-            <option value="trade">Gliederung: Gewerk</option>
-            <option value="itemType">Gliederung: Typ</option>
-            <option value="none">ohne Gliederung</option>
-          </select>
-        </label>
-        <div style={{ flex: 1 }} />
-        {!locked && (
-          <div style={{ display: 'flex', gap: 6, flex: '0 0 auto' }}>
-            <button className="btn" onClick={() => setAdopt(true)}>
-              Punkt übernehmen
-            </button>
-            <button className="btn primary" onClick={newItem}>
-              + Neuer Punkt
-            </button>
-          </div>
-        )}
-      </div>
-      {!groups.length && <div className="empty">Noch keine Punkte. Mit „+ Neuer Punkt“ beginnen.</div>}
-      {groups.map((g) => {
-        const items = g.items.filter((i) => !q || `${i.code} ${i.title}`.toLowerCase().includes(ql) || d.entries.some((e) => e.itemId === i.id && JSON.stringify(e.text || '').toLowerCase().includes(ql)));
-        if (!items.length) return null;
-        return (
-          <div key={g.key || '_'}>
-            {protocol.groupBy !== 'none' && <div className="group-h">{g.key || 'ohne Zuordnung'}</div>}
-            {items.map((it) => (
-              <ItemCard key={it.id} d={d} item={it} protocol={protocol} locked={locked} />
-            ))}
-          </div>
-        );
-      })}
-      {!locked && groups.length > 0 && (
-        <button className="btn primary" onClick={newItem}>
-          + Neuer Punkt
-        </button>
-      )}
-      {adopt && <AdoptDialog d={d} protocol={protocol} onClose={() => setAdopt(false)} />}
-    </>
-  );
-}
-
-function ItemCard({ d, item: shown, protocol, locked }: { d: D; item: Item; protocol: Protocol; locked: boolean }) {
-  const settings = useSettings();
-  const { contacts, companies, companyMap, contactMap } = useGlobal();
-  const lists = projectLists(d.project!, settings);
-  const item = locked ? shown : itemInProtocol(d.itemMap.get(shown.id)!, protocol);
-  const entries = entriesForItemInProtocol(item, protocol, d.entries, d.protocolMap);
-  const setItem = (patch: Partial<Item>) => !locked && save<Item>('item', item.id, patch);
-  const participantIds = d.project!.participants.map((p) => p.contactId);
-  const participantCompanies = new Set(participantIds.map((id) => contactMap.get(id)?.companyId).filter(Boolean) as string[]);
-  const companyOptions = [...companies].sort((a, b) => Number(participantCompanies.has(b.id)) - Number(participantCompanies.has(a.id)) || a.name.localeCompare(b.name, 'de'));
-  const responsibleIds = item.companyId ? contacts.filter((c) => c.companyId === item.companyId).map((c) => c.id) : participantIds;
-
-  const addEntry = async () => {
-    const today = todayIso();
-    const date = today > protocol.date ? today : protocol.date;
-    await save<Entry>('entry', null, { itemId: item.id, protocolId: protocol.id, date, text: null, addendum: today > protocol.date, fileIds: [] }, protocol.projectId);
-  };
-  const removeFromProtocol = async () => {
-    const isOrigin = item.originProtocolId === protocol.id;
-    const ownEntries = d.entries.filter((e) => e.itemId === item.id && e.protocolId !== protocol.id);
-    const msg = isOrigin && !ownEntries.length ? `Punkt ${item.code} löschen?` : `Punkt ${item.code} aus diesem Protokoll entfernen?`;
-    if (!confirm(msg)) return;
-    await save<Protocol>('protocol', protocol.id, { itemIds: protocol.itemIds.filter((x) => x !== item.id) });
-    for (const e of d.entries.filter((e) => e.itemId === item.id && e.protocolId === protocol.id)) await remove('entry', e.id);
-    if (isOrigin && !ownEntries.length && !d.protocols.some((p) => p.id !== protocol.id && p.itemIds.includes(item.id))) await remove('item', item.id);
-  };
-
-  const cls = ['item', item.status, item.priority === 'hoch' ? 'hoch' : ''].join(' ');
-  return (
-    <div className={cls} id={item.id}>
-      <div className="item-head">
-        <span className="code">{item.code}</span>
-        <div className="title">{locked ? <b>{item.title}</b> : <LazyInput value={item.title} placeholder="Titel des Punktes" onSave={(v) => setItem({ title: v })} />}</div>
-        <select value={item.status} disabled={locked} style={{ width: 120 }} onChange={(e) => setItem({ status: e.target.value as any, doneAt: e.target.value === 'erledigt' ? todayIso() : null })}>
-          <option value="info">Info</option>
-          <option value="offen">Offen</option>
-          <option value="erledigt">Erledigt</option>
-        </select>
-        <label className="check" title="Hohe Priorität" style={{ margin: 0 }}>
-          <input type="checkbox" disabled={locked} checked={item.priority === 'hoch'} onChange={(e) => setItem({ priority: e.target.checked ? 'hoch' : 'normal' })} />
-          <span style={{ color: 'var(--red)' }}>●</span>
-        </label>
-        {!locked && (
-          <button className="btn small ghost danger" onClick={removeFromProtocol} title="Entfernen">
-            ✕
-          </button>
-        )}
-      </div>
-      <div className="item-body">
-        <div className="item-entries">
-          {entries.map((e) => (
-            <EntryView key={e.id} d={d} entry={e} editable={!locked && e.protocolId === protocol.id} />
-          ))}
-          {!locked && (
-            <button className="btn small" onClick={addEntry}>
-              + Anmerkung
-            </button>
-          )}
-        </div>
-        <div className="item-meta">
-          <label className="f">
-            Firma
-            <select value={item.companyId || ''} disabled={locked} onChange={(e) => setItem({ companyId: e.target.value || null, responsibleId: null })}>
-              <option value="">Projektteam</option>
-              {companyOptions.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="f">
-            Zuständig
-            {locked ? (
-              <input disabled value={contactName(item.responsibleId ? contactMap.get(item.responsibleId) : null)} />
-            ) : (
-              <ContactSelect value={item.responsibleId} contacts={contacts} companies={companyMap} onlyIds={responsibleIds} onChange={(v) => setItem({ responsibleId: v })} />
-            )}
-          </label>
-          <label className="f">
-            Beobachter
-            <select
-              value=""
-              disabled={locked}
-              onChange={(e) => e.target.value && setItem({ observerIds: [...item.observerIds, e.target.value] })}
-            >
-              <option value="">+ hinzufügen…</option>
-              {companyOptions.filter((c) => !item.observerIds.includes(c.id)).map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          {!!item.observerIds.length && (
-            <div className="chips" style={{ marginTop: -2, marginBottom: 8 }}>
-              {item.observerIds.map((id) => (
-                <span key={id} className="chip">
-                  {companyMap.get(id)?.name || contactName(contactMap.get(id))}
-                  {!locked && <button onClick={() => setItem({ observerIds: item.observerIds.filter((x) => x !== id) })}>×</button>}
-                </span>
-              ))}
-            </div>
-          )}
-          <div className="grid2">
-            <label className="f">
-              Typ
-              <ListSelect value={item.itemType} options={lists.itemTypes} onChange={(v) => setItem({ itemType: v })} />
-            </label>
-            <label className="f">
-              Zusatzfeld
-              <ListSelect value={item.category} options={lists.categories} onChange={(v) => setItem({ category: v })} />
-            </label>
-          </div>
-          <label className="f">
-            Gewerk
-            <ListSelect value={item.trade} options={lists.trades} onChange={(v) => setItem({ trade: v })} />
-          </label>
-          {item.status !== 'info' && (
-            <div className="grid2">
-              <label className="f">
-                fällig von
-                <input type="date" disabled={locked} value={item.dueFrom || ''} onChange={(e) => setItem({ dueFrom: e.target.value || null })} />
-              </label>
-              <label className="f">
-                fällig bis
-                <input type="date" disabled={locked} value={item.dueTo || ''} onChange={(e) => setItem({ dueTo: e.target.value || null })} />
-              </label>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function EntryView({ d, entry, editable }: { d: D; entry: Entry; editable: boolean }) {
-  const proto = d.protocolMap.get(entry.protocolId);
-  const set = (patch: Partial<Entry>) => save<Entry>('entry', entry.id, patch);
-  const onFiles = async (files: FileList | null) => {
-    if (!files) return;
-    const ids: string[] = [];
-    for (const f of Array.from(files)) ids.push(await addFile(f, entry.projectId));
-    await set({ fileIds: [...entry.fileIds, ...ids] });
-  };
-  return (
-    <div className={'entry' + (editable ? '' : ' locked') + (entry.addendum ? ' addendum' : '')}>
-      <div className="when">
-        {editable ? (
-          <>
-            Anm.
-            <input type="date" value={entry.date} style={{ width: 150, minHeight: 28, padding: '2px 6px' }} onChange={(e) => set({ date: e.target.value })} />
-            <label className="check" style={{ margin: 0 }} title="Nachträgliche Ergänzung – wird kursiv gedruckt">
-              <input type="checkbox" checked={entry.addendum} onChange={(e) => set({ addendum: e.target.checked })} /> Ergänzung
-            </label>
-            <div style={{ flex: 1 }} />
-            <label className="btn small" title="Foto / Datei hinzufügen">
-              📷 Foto
-              <input type="file" accept="image/*" multiple hidden onChange={(e) => onFiles(e.target.files)} />
-            </label>
-            <button className="btn small ghost danger" title="Anmerkung löschen" onClick={() => confirm('Anmerkung löschen?') && remove('entry', entry.id)}>
-              ✕
-            </button>
-          </>
-        ) : (
-          <span>
-            Anm. {fmtDate(entry.date)}: {proto && <span className="badge">{proto.code}</span>}
-          </span>
-        )}
-      </div>
-      {editable ? <RichEditor value={entry.text} onSave={(v) => set({ text: v })} /> : <RichView value={entry.text} />}
-      {!!entry.fileIds.length && (
-        <div className="photos">
-          {entry.fileIds.map((fid) => (
-            <Thumb
-              key={fid}
-              id={fid}
-              readOnly={!editable}
-              caption={d.fileMap.get(fid)?.caption}
-              onCaption={(v) => save<FileMeta>('file', fid, { caption: v })}
-              onRemove={() => set({ fileIds: entry.fileIds.filter((x) => x !== fid) })}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  return <Navigate to={`/p/${pid}${p ? `?art=${p.typeKey}&p=${p.id}` : ''}`} replace />;
 }
 
 /** Punkte aus anderen Protokollen des Projekts in dieses Protokoll übernehmen */
-function AdoptDialog({ d, protocol, onClose }: { d: D; protocol: Protocol; onClose: () => void }) {
+export function AdoptDialog({ d, protocol, onClose }: { d: D; protocol: Protocol; onClose: () => void }) {
   const [sel, setSel] = useState<string[]>([]);
   const [onlyOpen, setOnlyOpen] = useState(true);
   const list = d.items
@@ -453,7 +95,7 @@ function AdoptDialog({ d, protocol, onClose }: { d: D; protocol: Protocol; onClo
 }
 
 // ---------------------------------------------------------------- Teilnehmer
-function AttendeesTab({ d, protocol, locked }: { d: D; protocol: Protocol; locked: boolean }) {
+export function AttendeesTab({ d, protocol, locked }: { d: D; protocol: Protocol; locked: boolean }) {
   const { contactMap, companyMap } = useGlobal();
   const att = new Map(protocol.attendees.map((a) => [a.contactId, a]));
   const ids = [...new Set([...d.project!.participants.map((p) => p.contactId), ...protocol.attendees.map((a) => a.contactId)])];
@@ -528,7 +170,7 @@ function AttendeesTab({ d, protocol, locked }: { d: D; protocol: Protocol; locke
 }
 
 // ---------------------------------------------------------------- Kopfdaten
-function HeadTab({ protocol, locked }: { protocol: Protocol; locked: boolean }) {
+export function HeadTab({ protocol, locked }: { protocol: Protocol; locked: boolean }) {
   const settings = useSettings();
   const set = (patch: Partial<Protocol>) => save<Protocol>('protocol', protocol.id, patch);
   return (
@@ -540,7 +182,7 @@ function HeadTab({ protocol, locked }: { protocol: Protocol; locked: boolean }) 
       <div className="grid3">
         <label className="f">
           Datum
-          <input type="date" disabled={locked} value={protocol.date} onChange={(e) => set({ date: e.target.value })} />
+          <DateInput disabled={locked} value={protocol.date} onChange={(v) => v && set({ date: v })} />
         </label>
         <label className="f">
           von
@@ -572,7 +214,7 @@ function HeadTab({ protocol, locked }: { protocol: Protocol; locked: boolean }) 
 }
 
 // ---------------------------------------------------------------- Nächste Besprechung
-function NextMeetingTab({ d, protocol, locked }: { d: D; protocol: Protocol; locked: boolean }) {
+export function NextMeetingTab({ d, protocol, locked }: { d: D; protocol: Protocol; locked: boolean }) {
   const { contactMap, companyMap } = useGlobal();
   const nm = protocol.nextMeeting || { date: '', timeFrom: protocol.timeFrom, timeTo: protocol.timeTo, location: protocol.location, note: '', inviteeIds: [] };
   const set = (patch: Partial<NonNullable<Protocol['nextMeeting']>>) => save<Protocol>('protocol', protocol.id, { nextMeeting: { ...nm, ...patch } });
@@ -582,7 +224,7 @@ function NextMeetingTab({ d, protocol, locked }: { d: D; protocol: Protocol; loc
       <div className="grid3">
         <label className="f">
           Datum
-          <input type="date" disabled={locked} value={nm.date} onChange={(e) => set({ date: e.target.value })} />
+          <DateInput disabled={locked} value={nm.date} onChange={(v) => set({ date: v || '' })} />
         </label>
         <label className="f">
           von
@@ -629,7 +271,7 @@ function NextMeetingTab({ d, protocol, locked }: { d: D; protocol: Protocol; loc
 }
 
 // ---------------------------------------------------------------- Versand
-function SendDialog({ d, protocol, typeName, onClose }: { d: D; protocol: Protocol; typeName: string; onClose: () => void }) {
+export function SendDialog({ d, protocol, typeName, onClose }: { d: D; protocol: Protocol; typeName: string; onClose: () => void }) {
   const settings = useSettings();
   const user = useUser();
   const { contactMap } = useGlobal();

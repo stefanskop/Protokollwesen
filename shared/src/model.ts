@@ -75,6 +75,7 @@ export interface Settings extends BaseRecord {
   companyPhone: string;
   logoFileId?: string | null; // null = Standardlogo
   signature: string; // "Gez. Bmstr. Dipl.-Ing. Stefan Skop"
+  entryLabel: string; // Bezeichnung der datierten Einträge im PDF, z.B. "Anm." oder "Eintrag"
   endText: string;
   protocolTypes: ProtocolTypeDef[];
   categories: string[]; // Zusatzfeld (00.Information …)

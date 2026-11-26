@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import type { RichText, Contact, Company } from '../../../shared/src/index';
-import { contactName } from '../../../shared/src/index';
+import type { Contact, Company } from '../../../shared/src/index';
+import { contactName, fmtDate, parseDeDate } from '../../../shared/src/index';
 import { useFileUrl } from '../data';
 
 export function Modal({ title, children, onClose, wide, actions }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean; actions?: ReactNode }) {
@@ -67,91 +65,56 @@ export function LazyTextarea({ value, onSave, ...rest }: { value: string; onSave
   );
 }
 
-/** Formatierter Text (fett, kursiv, Aufzählungen) */
-export function RichEditor({ value, onSave, autoFocus }: { value: RichText; onSave: (v: RichText) => void; autoFocus?: boolean }) {
-  const timer = useRef<any>(null);
-  const last = useRef(JSON.stringify(value));
-  const editor = useEditor({
-    extensions: [StarterKit.configure({ heading: false, codeBlock: false, code: false, blockquote: false, horizontalRule: false, link: false })],
-    content: value || '',
-    autofocus: autoFocus ? 'end' : false,
-    onUpdate: ({ editor }) => {
-      clearTimeout(timer.current);
-      timer.current = setTimeout(() => flush(editor.getJSON() as RichText), 1200);
-    },
-    onBlur: ({ editor }) => {
-      clearTimeout(timer.current);
-      flush(editor.getJSON() as RichText);
-    },
-  });
-  const flush = (j: RichText) => {
-    const s = JSON.stringify(j);
-    if (s !== last.current) {
-      last.current = s;
-      onSave(j);
-    }
-  };
-  useEffect(() => {
-    // Änderungen von anderen Geräten übernehmen, wenn nicht gerade bearbeitet wird
-    if (!editor || editor.isFocused) return;
-    const s = JSON.stringify(value);
-    if (s !== last.current) {
-      last.current = s;
-      editor.commands.setContent(value || '', { emitUpdate: false });
-    }
-  }, [value, editor]);
-  useEffect(() => () => clearTimeout(timer.current), []);
-  if (!editor) return null;
-  const B = ({ cmd, on, label, title }: { cmd: () => void; on?: boolean; label: ReactNode; title: string }) => (
-    <button type="button" title={title} className={on ? 'on' : ''} onMouseDown={(e) => e.preventDefault()} onClick={cmd}>
-      {label}
-    </button>
-  );
-  const c = () => editor.chain().focus();
-  return (
-    <div className="editor">
-      <div className="tb">
-        <B title="Fett" label={<b>F</b>} on={editor.isActive('bold')} cmd={() => c().toggleBold().run()} />
-        <B title="Kursiv" label={<i>K</i>} on={editor.isActive('italic')} cmd={() => c().toggleItalic().run()} />
-        <B title="Unterstrichen" label={<u>U</u>} on={editor.isActive('underline')} cmd={() => c().toggleUnderline().run()} />
-        <B title="Aufzählung" label="•" on={editor.isActive('bulletList')} cmd={() => c().toggleBulletList().run()} />
-        <B title="Nummerierung" label="1." on={editor.isActive('orderedList')} cmd={() => c().toggleOrderedList().run()} />
-        <B title="Einrücken" label="→" cmd={() => c().sinkListItem('listItem').run()} />
-        <B title="Ausrücken" label="←" cmd={() => c().liftListItem('listItem').run()} />
-      </div>
-      <EditorContent editor={editor} />
-    </div>
-  );
-}
+export { RichEditor, RichView } from './editor';
 
-/** Nur-Lese-Darstellung eines formatierten Textes */
-export function RichView({ value }: { value: RichText }) {
-  const render = (n: any, k: number): ReactNode => {
-    switch (n.type) {
-      case 'paragraph':
-        return <p key={k}>{(n.content || []).map(render)}</p>;
-      case 'bulletList':
-        return <ul key={k}>{(n.content || []).map(render)}</ul>;
-      case 'orderedList':
-        return <ol key={k}>{(n.content || []).map(render)}</ol>;
-      case 'listItem':
-        return <li key={k}>{(n.content || []).map(render)}</li>;
-      case 'hardBreak':
-        return <br key={k} />;
-      case 'text': {
-        let el: ReactNode = n.text;
-        for (const m of n.marks || []) {
-          if (m.type === 'bold') el = <b>{el}</b>;
-          if (m.type === 'italic') el = <i>{el}</i>;
-          if (m.type === 'underline') el = <u>{el}</u>;
-        }
-        return <span key={k}>{el}</span>;
-      }
-      default:
-        return <span key={k}>{(n.content || []).map(render)}</span>;
+/** Datumsfeld, immer im Format tt.mm.jjjj, mit Kalender-Auswahl */
+export function DateInput({ value, onChange, disabled, placeholder = 'tt.mm.jjjj', style }: { value?: string | null; onChange: (iso: string | null) => void; disabled?: boolean; placeholder?: string; style?: React.CSSProperties }) {
+  const [txt, setTxt] = useState(fmtDate(value));
+  const [bad, setBad] = useState(false);
+  const picker = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    setTxt(fmtDate(value));
+    setBad(false);
+  }, [value]);
+  const commit = () => {
+    if (!txt.trim()) {
+      setBad(false);
+      if (value) onChange(null);
+      return;
     }
+    const iso = parseDeDate(txt);
+    if (!iso) return setBad(true);
+    setBad(false);
+    setTxt(fmtDate(iso));
+    if (iso !== value) onChange(iso);
   };
-  return <div className="rt">{(value?.content || []).map(render)}</div>;
+  return (
+    <span className={'date-input' + (bad ? ' bad' : '')} style={style}>
+      <input
+        value={txt}
+        disabled={disabled}
+        placeholder={placeholder}
+        inputMode="numeric"
+        onChange={(e) => setTxt(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+      />
+      {!disabled && (
+        <button
+          type="button"
+          title="Kalender"
+          onClick={() => {
+            const el = picker.current as any;
+            if (el?.showPicker) el.showPicker();
+            else el?.click();
+          }}
+        >
+          📅
+        </button>
+      )}
+      <input ref={picker} type="date" tabIndex={-1} className="hidden-picker" value={value || ''} onChange={(e) => onChange(e.target.value || null)} />
+    </span>
+  );
 }
 
 export function ContactSelect({

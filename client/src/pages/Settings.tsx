@@ -89,6 +89,14 @@ function CompanyTab() {
         Endtext (Vorgabe für alle Protokolle)
         <LazyTextarea value={s.endText} rows={4} onSave={(v) => setS({ endText: v })} />
       </label>
+      <label className="f" style={{ maxWidth: 320 }}>
+        Bezeichnung der datierten Einträge im PDF
+        <select value={s.entryLabel} onChange={(e) => setS({ entryLabel: e.target.value })}>
+          <option value="Anm.">Anm. 26.11.2026:</option>
+          <option value="Eintrag">Eintrag 26.11.2026:</option>
+          <option value="Stand">Stand 26.11.2026:</option>
+        </select>
+      </label>
       <label className="f">
         Unterschriftszeile
         <LazyInput value={s.signature} onSave={(v) => setS({ signature: v })} />

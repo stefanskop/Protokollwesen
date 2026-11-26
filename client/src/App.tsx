@@ -1,5 +1,5 @@
 import { useEffect, useState, createContext, useContext } from 'react';
-import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import type { UserInfo } from '../../shared/src/index';
 import { api, getStoredUser, storeLogin, clearLogin, getToken } from './api';
@@ -8,6 +8,7 @@ import { startSyncLoop, onSyncState, syncNow, type SyncState } from './sync';
 import { ProjectsPage } from './pages/Projects';
 import { ProjectPage } from './pages/Project';
 import { ProtocolPage } from './pages/Protocol';
+import { Workspace } from './pages/Workspace';
 import { ContactsPage } from './pages/Contacts';
 import { SettingsPage } from './pages/Settings';
 
@@ -72,11 +73,12 @@ export function App() {
             <div className="grow" />
             <div className="user">{user.name}</div>
           </nav>
-          <main className="main">
+          <Main>
             <Notices />
             <Routes>
               <Route path="/" element={<ProjectsPage />} />
-              <Route path="/p/:pid" element={<ProjectPage />} />
+              <Route path="/p/:pid" element={<Workspace />} />
+              <Route path="/p/:pid/projekt" element={<ProjectPage />} />
               <Route path="/p/:pid/protokoll/:prid" element={<ProtocolPage />} />
               <Route path="/kontakte" element={<ContactsPage />} />
               <Route
@@ -95,11 +97,16 @@ export function App() {
               />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
-          </main>
+          </Main>
         </div>
       </BrowserRouter>
     </UserCtx.Provider>
   );
+}
+
+function Main({ children }: { children: React.ReactNode }) {
+  const loc = useLocation();
+  return <main className={'main' + (/^\/p\/[^/]+\/?$/.test(loc.pathname) ? ' main-ws' : '')}>{children}</main>;
 }
 
 export function SyncBadge() {

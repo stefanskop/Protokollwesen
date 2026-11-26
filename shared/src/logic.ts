@@ -171,3 +171,24 @@ export function uuid() {
     return (ch === 'x' ? r : (r & 0x3) | 0x8).toString(16);
   });
 }
+
+/** Kalenderwoche nach ISO 8601 */
+export function isoWeek(iso: string) {
+  const d = new Date(iso.slice(0, 10) + 'T12:00:00Z');
+  const day = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - day + 3);
+  const jan1 = Date.UTC(d.getUTCFullYear(), 0, 1);
+  return Math.floor((d.getTime() - jan1) / 86400000 / 7) + 1;
+}
+
+/** "tt.mm.jjjj" → ISO, sonst null */
+export function parseDeDate(s: string): string | null {
+  const m = /^\s*(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})\s*$/.exec(s);
+  if (!m) return null;
+  const y = m[3].length === 2 ? 2000 + parseInt(m[3], 10) : parseInt(m[3], 10);
+  const mo = parseInt(m[2], 10);
+  const d = parseInt(m[1], 10);
+  const dt = new Date(Date.UTC(y, mo - 1, d));
+  if (dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return null;
+  return `${y}-${pad(mo, 2)}-${pad(d, 2)}`;
+}
