@@ -14,6 +14,7 @@ import {
   type Item,
   type Entry,
   type FileMeta,
+  type Plan,
   type AnyRecord,
   uuid,
 } from '../../shared/src/index';
@@ -52,7 +53,10 @@ export function useProjectData(projectId: string | undefined) {
   const items = all.filter((r) => r.type === 'item') as Item[];
   const entries = all.filter((r) => r.type === 'entry') as Entry[];
   const files = all.filter((r) => r.type === 'file') as FileMeta[];
+  const plans = all.filter((r) => r.type === 'plan') as Plan[];
   return {
+    plans: plans.sort((a, b) => a.name.localeCompare(b.name, 'de', { numeric: true })),
+    planMap: new Map(plans.map((p) => [p.id, p])),
     loaded: !!recs,
     project,
     protocols: protocols.sort((a, b) => (a.date === b.date ? b.seq - a.seq : b.date.localeCompare(a.date))),
@@ -130,9 +134,9 @@ export async function shrinkImage(file: Blob & { name?: string }, max = 2000, qu
 }
 
 /** Datei lokal ablegen und als Datensatz registrieren */
-export async function addFile(file: File | Blob, projectId: string | null, name?: string): Promise<string> {
+export async function addFile(file: File | Blob, projectId: string | null, name?: string, opts: { keepOriginal?: boolean } = {}): Promise<string> {
   const id = uuid();
-  const blob = await shrinkImage(file);
+  const blob = opts.keepOriginal ? file : await shrinkImage(file);
   await putBlob(id, blob, false);
   let fname = name || (file as File).name || 'Datei';
   if (blob.type === 'image/jpeg' && /\.(heic|heif|png)$/i.test(fname)) fname = fname.replace(/\.[^.]+$/, '.jpg');

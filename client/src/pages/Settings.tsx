@@ -250,6 +250,7 @@ function PdfTab() {
           {F({ k: 'location', label: 'Lage' })}
           {F({ k: 'priority', label: 'Priorität' })}
           {F({ k: 'due', label: 'Zu erledigen von / bis' })}
+          {F({ k: 'planMarkers', label: 'Planmarker (Planausschnitt)' })}
         </div>
       </div>
     </>

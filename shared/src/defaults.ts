@@ -1,4 +1,4 @@
-import type { AnyRecord, PdfLayout, Settings, Project, Protocol, Item, Entry, Contact, Company, FileMeta } from './model';
+import type { AnyRecord, PdfLayout, Settings, Project, Protocol, Item, Entry, Contact, Company, FileMeta, Plan } from './model';
 
 export const DEFAULT_PDF: PdfLayout = {
   showCompanyHeader: true,
@@ -22,6 +22,7 @@ export const DEFAULT_PDF: PdfLayout = {
     location: false,
     priority: true,
     due: true,
+    planMarkers: true,
   },
 };
 
@@ -108,6 +109,8 @@ export function normalize<T extends AnyRecord>(r: T): T {
       return fill(r, { firstName: '', lastName: '' }) as T;
     case 'company':
       return fill(r, { name: '' }) as T;
+    case 'plan':
+      return fill(r, { folder: '', name: '', index: '', scale: '', keywords: '', location: '', active: true, mime: 'application/pdf', versions: [] }) as T;
     case 'file':
       return fill(r, { name: '', mime: '', size: 0 }) as T;
   }

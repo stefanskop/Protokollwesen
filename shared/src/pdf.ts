@@ -18,6 +18,8 @@ export interface PdfContext {
   images: Map<string, string>;
   logo?: string; // dataURL
   typeName: string;
+  /** Planausschnitte je Punkt (dataURL) */
+  planSnips?: Map<string, { label: string; img: string }[]>;
 }
 
 const GREY = '#6b6b6b';
@@ -343,8 +345,11 @@ function itemBlock(ctx: PdfContext, it: Item, accent: string): any {
       : { text: '' },
   ];
   const body: any[] = [row];
-  if (pics.length || docs.length) {
+  const snips = F.planMarkers ? ctx.planSnips?.get(it.id) || [] : [];
+  if (pics.length || docs.length || snips.length) {
     const stack: any[] = [{ text: 'Fotos & Daten', color: LINK, fontSize: 9.5, margin: [0, 4, 0, 2] }];
+    for (const sn of snips)
+      stack.push({ stack: [{ text: 'Planmarker: ' + sn.label, fontSize: 8, margin: [0, 2, 0, 2] }, { image: sn.img, width: 300 }], margin: [0, 0, 0, 6], unbreakable: true });
     if (docs.length) stack.push({ ul: docs.map((d) => ({ text: d, fontSize: 8 })), margin: [0, 0, 0, 2] });
     // Fotos in Reihen zu je max. 3 (klein) bzw. 2/1
     const perRow = Math.max(1, Math.floor(400 / ((pics[0]?.width as number) || 140)));

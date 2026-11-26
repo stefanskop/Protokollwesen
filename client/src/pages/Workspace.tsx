@@ -8,6 +8,7 @@ import { LazyInput, RichEditor, RichView, ContactSelect, ListSelect, DateInput, 
 import { SyncBadge, useUser } from '../App';
 import { NewProtocol } from './Project';
 import { SketchEditor } from '../components/Sketch';
+import { PlanViewer } from '../components/PlanViewer';
 import { AttendeesTab, HeadTab, NextMeetingTab, SendDialog, AdoptDialog } from './Protocol';
 import {
   fmtDate,
@@ -27,6 +28,8 @@ import {
   type Entry,
   type GroupBy,
   type FileMeta,
+  type Plan,
+  type PlanMarker,
 } from '../../../shared/src/index';
 
 type D = ReturnType<typeof useProjectData>;
@@ -155,6 +158,9 @@ export function Workspace() {
         </select>
         <Link className="btn" to={`/p/${project.id}/projekt`} title="Beteiligte, offene Punkte, Projektdaten">
           Projekt
+        </Link>
+        <Link className="btn" to={`/p/${project.id}/plaene`} title="Planverwaltung">
+          Pläne
         </Link>
         <label className="toggle">
           <input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} /> Abgeschlossene
@@ -584,6 +590,8 @@ function ItemDetail({ d, protocol, item: raw, locked, onBack, onRemoved }: { d: 
         </label>
       </div>
 
+      <MarkerSection d={d} item={item} ro={ro} onSet={(planMarkers) => setItem({ planMarkers })} />
+
       <div className="attach">
         <div className="attach-h">
           <b>Anhänge</b> <span className="badge">{attachments.length}</span>
@@ -697,6 +705,80 @@ function Attachment({ id, meta, editable, origin, onRemove, onReplace, projectId
         <div className="lightbox" onClick={() => setBig(false)}>
           <img src={url} alt="" />
         </div>
+      )}
+    </div>
+  );
+}
+
+function MarkerSection({ d, item, ro, onSet }: { d: D; item: Item; ro: boolean; onSet: (m: PlanMarker[]) => void }) {
+  const [choose, setChoose] = useState(false);
+  const [placing, setPlacing] = useState<Plan | null>(null);
+  const [showing, setShowing] = useState<PlanMarker | null>(null);
+  const markers = item.planMarkers || [];
+  const activePlans = d.plans.filter((p) => p.active);
+  if (!markers.length && (ro || !d.plans.length)) return null;
+  return (
+    <div className="attach">
+      <div className="attach-h">
+        <b>Planmarker</b> <span className="badge">{markers.length}</span>
+        <div className="grow" />
+        {!ro && !!activePlans.length && (
+          <button className="btn small" onClick={() => setChoose(true)}>
+            📍 Im Plan verorten
+          </button>
+        )}
+      </div>
+      <div className="chips">
+        {markers.map((m, k) => {
+          const p = d.planMap.get(m.planId);
+          return (
+            <span key={k} className="chip">
+              <button onClick={() => setShowing(m)} title="Im Plan anzeigen">
+                📍 {p ? p.name : 'Plan gelöscht'}
+                {p?.index ? ` (Index ${p.index})` : ''}
+              </button>
+              {!ro && <button onClick={() => onSet(markers.filter((_, j) => j !== k))}>×</button>}
+            </span>
+          );
+        })}
+      </div>
+      {choose && (
+        <Modal title="Plan wählen" onClose={() => setChoose(false)}>
+          <table className="list">
+            <tbody>
+              {activePlans.map((p) => (
+                <tr key={p.id} className="click" onClick={() => (setChoose(false), setPlacing(p))}>
+                  <td>
+                    <b>{p.name}</b>
+                  </td>
+                  <td className="small">{p.index && 'Index ' + p.index}</td>
+                  <td className="small muted">{p.folder}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Modal>
+      )}
+      {placing && (
+        <PlanViewer
+          plan={placing}
+          placeLabel={`${item.code}: in den Plan tippen, um den Marker zu setzen`}
+          markers={markers.filter((m) => m.planId === placing.id).map((m) => ({ marker: m, label: item.code }))}
+          onPlace={(m) => {
+            onSet([...markers, m]);
+            setPlacing(null);
+          }}
+          onClose={() => setPlacing(null)}
+        />
+      )}
+      {showing && d.planMap.get(showing.planId) && (
+        <PlanViewer
+          plan={d.planMap.get(showing.planId)!}
+          markers={d.items.flatMap((i) =>
+            (i.planMarkers || []).filter((m) => m.planId === showing.planId).map((m) => ({ marker: m, label: i.code, title: i.title, highlight: i.id === item.id && m === showing })),
+          )}
+          onClose={() => setShowing(null)}
+        />
       )}
     </div>
   );

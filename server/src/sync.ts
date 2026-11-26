@@ -4,7 +4,7 @@ import { authenticate, type AuthUser } from './auth';
 import { DEFAULT_SETTINGS, type Mutation, type PushResult, type PullResult } from '../../shared/src/index';
 
 const GLOBAL_TYPES = new Set(['settings', 'company', 'contact']);
-const PROJECT_TYPES = new Set(['project', 'protocol', 'item', 'entry', 'file']);
+const PROJECT_TYPES = new Set(['project', 'protocol', 'item', 'entry', 'file', 'plan']);
 
 interface Row {
   id: string;

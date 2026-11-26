@@ -10,6 +10,7 @@ import { ProjectPage } from './pages/Project';
 import { ProtocolPage } from './pages/Protocol';
 import { Workspace } from './pages/Workspace';
 import { ImportPage } from './pages/Import';
+import { PlansPage } from './pages/Plans';
 import { ContactsPage } from './pages/Contacts';
 import { SettingsPage } from './pages/Settings';
 
@@ -80,6 +81,7 @@ export function App() {
               <Route path="/" element={<ProjectsPage />} />
               <Route path="/p/:pid" element={<Workspace />} />
               <Route path="/p/:pid/projekt" element={<ProjectPage />} />
+              <Route path="/p/:pid/plaene" element={<PlansPage />} />
               <Route path="/p/:pid/protokoll/:prid" element={<ProtocolPage />} />
               <Route path="/kontakte" element={<ContactsPage />} />
               <Route path="/import" element={<ImportPage />} />
@@ -108,7 +110,7 @@ export function App() {
 
 function Main({ children }: { children: React.ReactNode }) {
   const loc = useLocation();
-  return <main className={'main' + (/^\/p\/[^/]+\/?$/.test(loc.pathname) ? ' main-ws' : '')}>{children}</main>;
+  return <main className={'main' + (/^\/p\/[^/]+(\/plaene)?\/?$/.test(loc.pathname) ? ' main-ws' : '')}>{children}</main>;
 }
 
 export function SyncBadge() {

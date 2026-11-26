@@ -14,7 +14,8 @@ export type RecordType =
   | 'protocol'
   | 'item'
   | 'entry'
-  | 'file';
+  | 'file'
+  | 'plan';
 
 export interface BaseRecord {
   id: string;
@@ -64,6 +65,7 @@ export interface PdfLayout {
     location: boolean;
     priority: boolean;
     due: boolean;
+    planMarkers: boolean;
   };
 }
 
@@ -129,6 +131,8 @@ export interface Project extends BaseRecord {
   trades?: string[] | null;
   protocolTypeKeys?: string[] | null;
   locations?: string[];
+  /** Ordner der Planverwaltung */
+  planFolders?: string[];
 }
 
 export interface Attendee {
@@ -197,6 +201,40 @@ export interface Item extends BaseRecord {
   dueFrom?: string | null;
   dueTo?: string | null;
   doneAt?: string | null;
+  /** Verortung im Plan (relative Koordinaten 0..1) */
+  planMarkers?: PlanMarker[];
+}
+
+export interface PlanMarker {
+  planId: string;
+  page: number;
+  x: number;
+  y: number;
+}
+
+export interface PlanVersion {
+  index: string;
+  fileId: string;
+  mime: string;
+  planDate?: string | null;
+  uploadedAt: string;
+}
+
+export interface Plan extends BaseRecord {
+  type: 'plan';
+  projectId: string;
+  folder: string;
+  name: string;
+  index: string;
+  scale: string;
+  planDate?: string | null;
+  keywords: string;
+  location: string;
+  active: boolean;
+  fileId: string;
+  mime: string;
+  /** ältere Indexstände */
+  versions: PlanVersion[];
 }
 
 export interface Entry extends BaseRecord {
@@ -221,7 +259,7 @@ export interface FileMeta extends BaseRecord {
   uploaded?: boolean;
 }
 
-export type AnyRecord = Settings | Company | Contact | Project | Protocol | Item | Entry | FileMeta;
+export type AnyRecord = Settings | Company | Contact | Project | Protocol | Item | Entry | FileMeta | Plan;
 
 export interface UserInfo {
   id: string;

@@ -2,7 +2,7 @@
 import type { PdfPage } from '../../shared/src/baumaster';
 
 let lib: Promise<any> | null = null;
-async function pdfjs() {
+export async function pdfjs() {
   if (!lib) {
     lib = (async () => {
       const m: any = await import('pdfjs-dist/legacy/build/pdf.mjs');

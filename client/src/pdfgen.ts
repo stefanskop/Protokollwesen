@@ -1,7 +1,8 @@
 import { ldb } from './db';
 import { getBlob } from './sync';
 import { blobToDataUrl } from './data';
-import { buildProtocolPdf, normalize, type Settings, type Project, type Protocol, type Item, type Entry, type Contact, type Company, type FileMeta, type AnyRecord } from '../../shared/src/index';
+import { planSnippet } from './planrender';
+import { buildProtocolPdf, normalize, type Settings, type Project, type Protocol, type Item, type Entry, type Contact, type Company, type FileMeta, type AnyRecord, type Plan } from '../../shared/src/index';
 
 let pdfMakePromise: Promise<any> | null = null;
 async function loadPdfMake() {
@@ -70,6 +71,26 @@ export async function generateProtocolPdf(protocolId: string): Promise<{ blob: B
   for (const id of need) {
     const d = await imageDataUrl(id);
     if (d) ctx.images.set(id, d);
+  }
+  // Planausschnitte für verortete Punkte
+  if (settings.pdf.fields.planMarkers) {
+    const plans = new Map(all.filter((r) => r.type === 'plan').map((p) => [p.id, p as Plan]));
+    const snips = new Map<string, { label: string; img: string }[]>();
+    for (const id of protocol.itemIds) {
+      const it = ctx.items.get(id);
+      for (const m of it?.planMarkers || []) {
+        const plan = plans.get(m.planId);
+        if (!plan) continue;
+        try {
+          const img = await planSnippet(plan.fileId, plan.mime, m, it!.code);
+          const label = `${plan.name}${plan.index ? ' (Index ' + plan.index + ')' : ''}`;
+          snips.set(id, [...(snips.get(id) || []), { label, img }]);
+        } catch (e) {
+          console.warn('Planausschnitt nicht möglich', e);
+        }
+      }
+    }
+    (ctx as any).planSnips = snips;
   }
   const pdfMake = await loadPdfMake();
   const doc = buildProtocolPdf(ctx);
